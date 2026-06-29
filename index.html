@@ -179,6 +179,16 @@ select option{background:#0a0f1e;color:#e0e0e0}
 .top-bar .username{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--green)}
 .custom-dist-row{display:none}
 .split-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);color:var(--gold);font-size:12px;margin-top:8px}
+.vehicle-bar{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--glass);border:1px solid var(--glass-border);cursor:pointer;margin-bottom:12px;transition:.2s}
+.vehicle-bar:hover{border-color:var(--glass-border2);background:rgba(0,255,65,.06)}
+.vehicle-bar.set{border-color:rgba(0,255,65,.3)}
+.vbar-logo{width:38px;height:38px;border-radius:8px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.vbar-logo img{width:28px;height:28px;object-fit:contain}
+.vbar-badge{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,var(--green),var(--green2));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;color:#000}
+.vbar-info{flex:1;min-width:0}
+.vbar-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vbar-sub{font-size:11px;color:var(--text-dim);margin-top:2px}
+.vbar-action{font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--green);flex-shrink:0}
 .result-card{padding:24px;border-radius:16px;background:linear-gradient(135deg,rgba(0,255,65,.08),rgba(0,204,51,.04));border:1px solid rgba(0,255,65,.3);text-align:center;margin-bottom:16px}
 .result-time{font-family:'Orbitron',sans-serif;font-size:clamp(36px,12vw,64px);font-weight:900;color:var(--green);text-shadow:0 0 40px rgba(0,255,65,.6)}
 .result-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
@@ -278,6 +288,16 @@ select option{background:#0a0f1e;color:#e0e0e0}
     <span style="margin-left:auto;font-family:'Orbitron',sans-serif;font-size:11px;color:var(--green)" id="gps-acc"></span>
   </div>
 
+  <!-- Vehicle bar -->
+  <div class="vehicle-bar" id="race-vehicle-bar" onclick="openVehiclePicker()">
+    <div class="vbar-logo" id="vbar-logo-box"><div class="vbar-badge" id="vbar-badge">?</div></div>
+    <div class="vbar-info">
+      <div class="vbar-name" id="vbar-name">No vehicle selected</div>
+      <div class="vbar-sub" id="vbar-sub">Tap to set your vehicle</div>
+    </div>
+    <div class="vbar-action" id="vbar-action">SELECT</div>
+  </div>
+
   <!-- Idle -->
   <div id="state-idle">
     <div class="timer-box">
@@ -340,7 +360,7 @@ select option{background:#0a0f1e;color:#e0e0e0}
 
 <!-- ═══════════════ VEHICLE PICKER ═══════════════ -->
 <section id="vehicle">
-  <div class="page-title">Save Run</div>
+  <div class="page-title" id="vehicle-section-title">Select Vehicle</div>
   <div class="brand-header" id="brand-header">
     <div class="brand-logo" id="brand-logo-box">
       <div class="brand-badge" id="brand-badge">?</div>
@@ -384,7 +404,7 @@ select option{background:#0a0f1e;color:#e0e0e0}
   </div>
 
   <div style="display:flex;gap:10px">
-    <button class="btn btn-green" style="flex:1" onclick="confirmSaveRun()">SAVE RUN</button>
+    <button class="btn btn-green" style="flex:1" id="vehicle-confirm-btn" onclick="confirmVehicle()">SET VEHICLE</button>
     <button class="btn btn-outline" onclick="showSection('race')">CANCEL</button>
   </div>
 </section>
@@ -606,6 +626,7 @@ function showSection(id){
   if(id==='race'){
     const u=currentUser();
     if(u)document.getElementById('race-username').textContent=u.username.toUpperCase();
+    updateVehicleBar();
   }
 }
 
@@ -622,6 +643,8 @@ let lastGPS=null,gpsSpeed=0,gpsDist=0,gpsMaxSpeed=0;
 let split100Saved=false,split100Time=0;
 let customTargetVal=null,customTargetIsSpeed=false;
 let armTime=0;
+let currentVehicle=null; // {make,model,year,variant}
+let vehiclePickerMode='pre'; // 'pre' = before run, 'post' = after run save
 
 function selectMode(mode){
   raceMode=mode;
@@ -899,8 +922,13 @@ function updateBrandHeader(make){
 function renderVehicleSection(){
   populateMakes();
   populateYears();
-  updateBrandHeader(null);
-  document.getElementById('v-variant').value='';
+  if(!currentVehicle){
+    updateBrandHeader(null);
+    document.getElementById('v-make').value='';
+    document.getElementById('v-model').innerHTML='<option value="">Select make first</option>';
+    document.getElementById('v-year').value='';
+    document.getElementById('v-variant').value='';
+  }
   renderSavedChips();
 }
 
@@ -945,12 +973,38 @@ function removeChip(i){
   renderSavedChips();
 }
 
-function goSaveRun(){
-  if(!window._pendingResult)return;
+function openVehiclePicker(){
+  vehiclePickerMode='pre';
+  document.getElementById('vehicle-section-title').textContent='Select Vehicle';
+  document.getElementById('vehicle-confirm-btn').textContent='SET VEHICLE';
+  // Pre-fill if already set
+  if(currentVehicle){
+    document.getElementById('v-make').value=currentVehicle.make;
+    onMakeChange();
+    setTimeout(()=>{
+      document.getElementById('v-model').value=currentVehicle.model||'';
+      document.getElementById('v-year').value=currentVehicle.year||'';
+      document.getElementById('v-variant').value=currentVehicle.variant||'';
+      onModelChange();
+    },50);
+  }
   showSection('vehicle');
 }
 
-function confirmSaveRun(){
+function goSaveRun(){
+  if(!window._pendingResult)return;
+  if(currentVehicle){
+    // Vehicle already selected — save straight away
+    saveRunWithVehicle(currentVehicle);
+  } else {
+    vehiclePickerMode='post';
+    document.getElementById('vehicle-section-title').textContent='Save Run';
+    document.getElementById('vehicle-confirm-btn').textContent='SAVE RUN';
+    showSection('vehicle');
+  }
+}
+
+function confirmVehicle(){
   const make=document.getElementById('v-make').value;
   const model=document.getElementById('v-model').value;
   const year=document.getElementById('v-year').value;
@@ -958,12 +1012,54 @@ function confirmSaveRun(){
   if(!make){showToast('Select a make','error');return;}
   if(!model){showToast('Select a model','error');return;}
   if(!year){showToast('Select a year','error');return;}
+  const v={make,model,year,variant};
+  if(vehiclePickerMode==='pre'){
+    currentVehicle=v;
+    updateVehicleBar();
+    showSection('race');
+    showToast('Vehicle set: '+[make,model,year].join(' '));
+  } else {
+    saveRunWithVehicle(v);
+  }
+}
 
+function updateVehicleBar(){
+  const bar=document.getElementById('race-vehicle-bar');
+  const logoBox=document.getElementById('vbar-logo-box');
+  const name=document.getElementById('vbar-name');
+  const sub=document.getElementById('vbar-sub');
+  const action=document.getElementById('vbar-action');
+  if(!currentVehicle){
+    bar.classList.remove('set');
+    logoBox.innerHTML='<div class="vbar-badge">?</div>';
+    name.textContent='No vehicle selected';
+    sub.textContent='Tap to set your vehicle';
+    action.textContent='SELECT';
+    return;
+  }
+  bar.classList.add('set');
+  const {make,model,year,variant}=currentVehicle;
+  name.textContent=[make,model].filter(Boolean).join(' ');
+  sub.textContent=[year,variant].filter(Boolean).join(' · ')||'';
+  action.textContent='CHANGE';
+  const domain=BRAND_DOMAINS[make];
+  if(domain){
+    const img=new Image();
+    img.onload=()=>{logoBox.innerHTML=`<img src="https://logo.clearbit.com/${domain}" style="width:28px;height:28px;object-fit:contain">`;};
+    img.onerror=()=>{logoBox.innerHTML=`<div class="vbar-badge">${make.substring(0,2).toUpperCase()}</div>`;};
+    img.src=`https://logo.clearbit.com/${domain}`;
+  } else {
+    logoBox.innerHTML=`<div class="vbar-badge">${make.substring(0,2).toUpperCase()}</div>`;
+  }
+}
+
+function saveRunWithVehicle(v){
   const u=currentUser();
   if(!u)return;
   const res=window._pendingResult;
+  if(!res)return;
+  const {make,model,year,variant}=v;
 
-  // Save run
   const runs=getRuns();
   runs.push({
     id:'r_'+Date.now(),
@@ -977,12 +1073,12 @@ function confirmSaveRun(){
   });
   saveRuns(runs);
 
-  // Save vehicle to user
+  // Remember vehicle on user profile
   const users=getUsers();
   const usr=users.find(x=>x.id===u.id);
   if(usr){
     if(!usr.savedVehicles)usr.savedVehicles=[];
-    const existing=usr.savedVehicles.findIndex(v=>v.make===make&&v.model===model&&v.year===year&&v.variant===variant);
+    const existing=usr.savedVehicles.findIndex(sv=>sv.make===make&&sv.model===model&&sv.year===year&&sv.variant===variant);
     if(existing>=0)usr.savedVehicles.splice(existing,1);
     usr.savedVehicles.push({make,model,year,variant});
     if(usr.savedVehicles.length>20)usr.savedVehicles=usr.savedVehicles.slice(-20);
