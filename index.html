@@ -1323,6 +1323,7 @@ function initChat(){
   const proto=location.protocol==='https:'?'wss':'ws';
   const url=proto+'://'+location.host+'/ws';
   chatWs=new WebSocket(url);
+  let pingInterval=null;
   const disc=document.getElementById('chat-disconnected');
   disc.style.display='';
   disc.textContent='Connecting to chat…';
@@ -1331,6 +1332,10 @@ function initChat(){
     chatReady=true;
     disc.style.display='none';
     document.getElementById('chat-send-btn').disabled=false;
+    // Keep Railway proxy alive with application-level pings every 20 s
+    pingInterval=setInterval(()=>{
+      if(chatWs.readyState===1)chatWs.send(JSON.stringify({type:'ping'}));
+    },20000);
   };
 
   chatWs.onmessage=e=>{
@@ -1351,6 +1356,7 @@ function initChat(){
 
   chatWs.onclose=()=>{
     chatReady=false;
+    clearInterval(pingInterval);
     document.getElementById('chat-send-btn').disabled=true;
     disc.style.display='';
     disc.textContent='Disconnected. Reconnecting…';
