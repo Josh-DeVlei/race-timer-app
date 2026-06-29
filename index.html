@@ -762,10 +762,8 @@ function onGPS(pos){
     if(!split100Saved&&spd>=100){split100Saved=true;split100Time=performance.now()-raceStart;}
   }
 
-  // Auto-launch on armed — GPS fallback only, needs 1s settle time
-  if(raceState==='armed'&&(Date.now()-armTime)>1000){
-    if(spd>8)startRace();
-  }
+  // Auto-launch on armed — GPS fallback
+  if(raceState==='armed'&&spd>8)startRace();
 }
 
 function onGPSError(e){setGPSStatus('GPS error — '+e.message,'#555')}
@@ -812,11 +810,11 @@ function listenMotion(){
     const ag=e.accelerationIncludingGravity;
     if(ag)window._latestAccel=Math.sqrt((ag.x||0)**2+(ag.y||0)**2+(ag.z||0)**2);
 
-    // Launch detection uses linear acceleration (gravity removed) — much more reliable
+    // Launch detection uses linear acceleration (gravity removed)
     const la=e.acceleration;
-    if(la&&raceState==='armed'&&(Date.now()-armTime)>1000){
-      const mag=Math.sqrt((la.x||0)**2+(la.y||0)**2+(la.z||0)**2);
-      if(mag>3)startRace(); // >3 m/s² (~0.3g) = clear vehicle launch
+    if(la&&la.x!=null&&raceState==='armed'){
+      const mag=Math.sqrt(la.x**2+la.y**2+la.z**2);
+      if(mag>2.5)startRace();
     }
   });
 }
