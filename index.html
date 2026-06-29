@@ -29,7 +29,7 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif}
 
-/* â”€â”€ Background â”€â”€ */
+/* ── Background ── */
 body::before{
   content:'';position:fixed;inset:0;
   background:
@@ -45,7 +45,7 @@ body::before{
 .orb2{width:300px;height:300px;background:rgba(0,180,216,0.05);bottom:-50px;right:-50px;animation-delay:-3s}
 @keyframes orbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 
-/* â”€â”€ Layout â”€â”€ */
+/* ── Layout ── */
 #app{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;overflow:hidden}
 section{flex:1;overflow-y:auto;padding:0 16px 80px;display:none}
 section.active{display:block}
@@ -55,12 +55,12 @@ section.active{display:block}
 .nav-btn svg{width:22px;height:22px;transition:.2s}
 .nav-btn.active svg{filter:drop-shadow(0 0 6px var(--green))}
 
-/* â”€â”€ Cards / Glass â”€â”€ */
+/* ── Cards / Glass ── */
 .card{background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--glass-border);border-radius:16px;padding:20px;margin-bottom:16px;transition:.3s ease;box-shadow:var(--shadow)}
 .card-3d:hover{transform:translateY(-3px) rotateX(2deg);border-color:var(--glass-border2);box-shadow:0 16px 40px rgba(0,0,0,.8),0 0 20px rgba(0,255,65,.08)}
 .card-glow{border-color:rgba(0,255,65,.4);box-shadow:0 0 30px rgba(0,255,65,.1)}
 
-/* â”€â”€ Buttons â”€â”€ */
+/* ── Buttons ── */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 28px;border-radius:12px;border:none;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;transition:.2s;position:relative;overflow:hidden}
 .btn::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.1),transparent);pointer-events:none}
 .btn-green{background:linear-gradient(135deg,#00ff41,#00cc33);color:#000;box-shadow:0 4px 20px rgba(0,255,65,.4)}
@@ -73,18 +73,18 @@ section.active{display:block}
 .btn-sm{padding:8px 16px;font-size:11px;border-radius:8px}
 .btn-block{width:100%}
 
-/* â”€â”€ Inputs â”€â”€ */
+/* ── Inputs ── */
 .input-group{margin-bottom:14px}
 .input-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;display:block}
 input,select,textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 16px;color:var(--text);font-family:'Inter',sans-serif;font-size:15px;outline:none;transition:.2s;-webkit-appearance:none;appearance:none}
 input:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,255,65,.1)}
 select option{background:#0a0f1e;color:#e0e0e0}
 
-/* â”€â”€ Headings â”€â”€ */
+/* ── Headings ── */
 .page-title{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:700;color:var(--green);letter-spacing:2px;text-transform:uppercase;padding:20px 0 4px;text-shadow:0 0 20px rgba(0,255,65,.4)}
 .section-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
 
-/* â”€â”€ Auth section â”€â”€ */
+/* ── Auth section ── */
 #auth{align-items:center;justify-content:center;padding:20px;background:var(--bg)}
 #auth.active{display:flex!important}
 .auth-box{width:100%;max-width:400px}
@@ -96,7 +96,7 @@ select option{background:#0a0f1e;color:#e0e0e0}
 .auth-tab.active{background:rgba(0,255,65,.15);color:var(--green)}
 .auth-error{color:var(--red);font-size:13px;margin-top:8px;text-align:center;min-height:20px}
 
-/* â”€â”€ Race section â”€â”€ */
+/* ── Race section ── */
 .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .mode-card{padding:14px;border-radius:12px;border:1px solid var(--glass-border);background:var(--glass);cursor:pointer;text-align:center;transition:.2s;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--text-dim)}
 .mode-card.selected{border-color:var(--green);color:var(--green);background:rgba(0,255,65,.08);box-shadow:0 0 20px rgba(0,255,65,.15)}
@@ -118,7 +118,7 @@ select option{background:#0a0f1e;color:#e0e0e0}
 .action-btns{display:flex;gap:10px;margin-bottom:12px}
 .motion-btn{background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.3);color:var(--blue);border-radius:10px;padding:10px 14px;font-size:12px;cursor:pointer;display:none;font-family:'Inter',sans-serif}
 
-/* â”€â”€ Vehicle section â”€â”€ */
+/* ── Vehicle section ── */
 #vehicle{background:var(--bg)}
 #vehicle.active{display:block}
 .brand-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
@@ -133,7 +133,7 @@ select option{background:#0a0f1e;color:#e0e0e0}
 .chip-remove{color:var(--text-dim);font-size:10px;line-height:1;padding:0 2px}
 .chip-remove:hover{color:var(--red)}
 
-/* â”€â”€ Leaderboard section â”€â”€ */
+/* ── Leaderboard section ── */
 .lb-tabs{display:flex;margin-bottom:16px;background:rgba(255,255,255,.03);border-radius:10px;padding:4px}
 .lb-tab{flex:1;padding:10px;text-align:center;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text-dim);transition:.2s}
 .lb-tab.active{background:rgba(0,255,65,.15);color:var(--green)}
@@ -151,7 +151,7 @@ select option{background:#0a0f1e;color:#e0e0e0}
 .lb-logo-sm .mini-badge{width:20px;height:20px;border-radius:4px;background:linear-gradient(135deg,var(--green),var(--green2));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:8px;font-weight:900;color:#000}
 .lb-empty{text-align:center;padding:40px 20px;color:var(--text-dim);font-size:14px}
 
-/* â”€â”€ Profile section â”€â”€ */
+/* ── Profile section ── */
 .profile-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green2));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;color:#000;margin:0 auto 12px;box-shadow:0 0 30px rgba(0,255,65,.4)}
 .profile-name{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:700;color:var(--green);text-align:center;text-shadow:0 0 20px rgba(0,255,65,.4)}
 .profile-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:16px 0}
@@ -167,12 +167,12 @@ select option{background:#0a0f1e;color:#e0e0e0}
 .svi-remove{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:18px;padding:4px;line-height:1}
 .svi-remove:hover{color:var(--red)}
 
-/* â”€â”€ Toast â”€â”€ */
+/* ── Toast ── */
 .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:rgba(0,255,65,.9);color:#000;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;z-index:999;transition:.3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,255,65,.5)}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.error{background:rgba(255,64,64,.9);color:#fff;box-shadow:0 4px 20px rgba(255,64,64,.5)}
 
-/* â”€â”€ Misc â”€â”€ */
+/* ── Misc ── */
 .divider{height:1px;background:linear-gradient(to right,transparent,var(--glass-border),transparent);margin:16px 0}
 .top-bar{display:flex;align-items:center;justify-content:space-between;padding:16px 0 8px}
 .top-bar .greeting{font-size:12px;color:var(--text-dim);letter-spacing:1px}
@@ -193,11 +193,11 @@ select option{background:#0a0f1e;color:#e0e0e0}
 
 <div id="app">
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• AUTH â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════ AUTH ═══════════════ -->
 <section id="auth" class="active">
   <div class="auth-box">
     <div class="auth-logo">
-      <div class="logo-text">âš¡ RACE TIMER</div>
+      <div class="logo-text">&#9889; RACE TIMER</div>
       <div class="logo-sub">Track every millisecond</div>
     </div>
     <div class="auth-tabs">
@@ -234,7 +234,7 @@ select option{background:#0a0f1e;color:#e0e0e0}
   </div>
 </section>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• RACE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════ RACE ═══════════════ -->
 <section id="race">
   <div class="top-bar">
     <div>
@@ -246,16 +246,16 @@ select option{background:#0a0f1e;color:#e0e0e0}
 
   <div class="mode-grid">
     <div class="mode-card selected" data-mode="0100" onclick="selectMode('0100')">
-      <span class="mode-val">0â†’100</span>km/h
+      <span class="mode-val">0&#8594;100</span>km/h
     </div>
     <div class="mode-card" data-mode="400m" onclick="selectMode('400m')">
       <span class="mode-val">400m</span>Quarter Mile
     </div>
     <div class="mode-card" data-mode="custom_dist" onclick="selectMode('custom_dist')">
-      <span class="mode-val">ðŸ“</span>Custom Dist
+      <span class="mode-val" style="font-size:16px;font-family:'Inter',sans-serif">DIST</span>Custom Dist
     </div>
     <div class="mode-card" data-mode="custom_speed" onclick="selectMode('custom_speed')">
-      <span class="mode-val">ðŸŽ¯</span>Custom Speed
+      <span class="mode-val" style="font-size:16px;font-family:'Inter',sans-serif">SPEED</span>Custom Speed
     </div>
   </div>
 
@@ -274,7 +274,7 @@ select option{background:#0a0f1e;color:#e0e0e0}
 
   <div class="gps-bar">
     <div class="gps-dot" id="gps-dot"></div>
-    <span id="gps-status">GPS: acquiringâ€¦</span>
+    <span id="gps-status">GPS: acquiring…</span>
     <span style="margin-left:auto;font-family:'Orbitron',sans-serif;font-size:11px;color:var(--green)" id="gps-acc"></span>
   </div>
 
@@ -290,14 +290,14 @@ select option{background:#0a0f1e;color:#e0e0e0}
     </div>
     <div class="action-btns">
       <button class="btn btn-green" style="flex:1" id="arm-btn" onclick="armRace()">ARM</button>
-      <button class="btn btn-outline btn-sm" onclick="showLeaderboard()">ðŸ†</button>
+      <button class="btn btn-outline btn-sm" onclick="showLeaderboard()">LB</button>
     </div>
   </div>
 
   <!-- Armed -->
   <div id="state-armed" style="display:none">
     <div class="timer-box">
-      <div class="timer-label">ARMED â€” LAUNCH!</div>
+      <div class="timer-label">ARMED — LAUNCH!</div>
       <div class="timer-display" style="color:var(--gold);text-shadow:0 0 40px rgba(255,215,0,.6)">READY</div>
     </div>
     <p style="text-align:center;font-size:13px;color:var(--text-dim);margin-bottom:16px">Accelerate hard to start automatically, or tap below</p>
@@ -332,13 +332,13 @@ select option{background:#0a0f1e;color:#e0e0e0}
       </div>
     </div>
     <div class="action-btns">
-      <button class="btn btn-green" style="flex:1" onclick="goSaveRun()">ðŸ’¾ SAVE RUN</button>
+      <button class="btn btn-green" style="flex:1" onclick="goSaveRun()">SAVE RUN</button>
       <button class="btn btn-outline" onclick="resetRace()">RETRY</button>
     </div>
   </div>
 </section>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• VEHICLE PICKER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════ VEHICLE PICKER ═══════════════ -->
 <section id="vehicle">
   <div class="page-title">Save Run</div>
   <div class="brand-header" id="brand-header">
@@ -379,7 +379,7 @@ select option{background:#0a0f1e;color:#e0e0e0}
     </div>
     <div class="input-group">
       <label class="input-label">Variant / Spec <span style="color:var(--text-dim);font-size:10px;text-transform:none;letter-spacing:0">(e.g. 2.8 4x4 Legend)</span></label>
-      <input type="text" id="v-variant" placeholder="Optional â€” e.g. 2.8 4x4 Legend" autocapitalize="words">
+      <input type="text" id="v-variant" placeholder="Optional — e.g. 2.8 4x4 Legend" autocapitalize="words">
     </div>
   </div>
 
@@ -389,7 +389,7 @@ select option{background:#0a0f1e;color:#e0e0e0}
   </div>
 </section>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• LEADERBOARD â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════ LEADERBOARD ═══════════════ -->
 <section id="leaderboard">
   <div class="page-title">Leaderboard</div>
   <div class="lb-tabs">
@@ -398,11 +398,11 @@ select option{background:#0a0f1e;color:#e0e0e0}
   </div>
   <div id="lb-content"></div>
   <div id="lb-admin-bar" style="display:none;margin-top:8px">
-    <button class="btn btn-red btn-block btn-sm" onclick="clearLeaderboard()">ðŸ—‘ CLEAR ALL RUNS (ADMIN)</button>
+    <button class="btn btn-red btn-block btn-sm" onclick="clearLeaderboard()">CLEAR ALL RUNS (ADMIN)</button>
   </div>
 </section>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PROFILE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════ PROFILE ═══════════════ -->
 <section id="profile">
   <div class="page-title">Profile</div>
   <div class="card card-3d" style="text-align:center;padding:28px">
@@ -439,9 +439,9 @@ select option{background:#0a0f1e;color:#e0e0e0}
 </div><!-- #app -->
 
 <script>
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // DATA
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 
 const SA_VEHICLES = {
   "Toyota":["Hilux","Land Cruiser","Fortuner","Prado","RAV4","Corolla","Camry","Yaris","C-HR","Avanza","Rush","Rumion","HiAce","Quantum","Dyna"],
@@ -460,7 +460,7 @@ const SA_VEHICLES = {
   "Suzuki":["Swift","Baleno","Ciaz","Dzire","S-Presso","Ignis","Vitara","Brezza","Jimny","Ertiga","XL6","Celerio","Alto"],
   "Renault":["Kwid","Triber","Kiger","Duster","Captur","Clio","Megane","Kadjar","Koleos","Alaskan","Zoe","Master","Trafic"],
   "Peugeot":["108","208","308","508","2008","3008","5008","Partner","Expert","Boxer","Landtrek"],
-  "CitroÃ«n":["C3","C4","C5 Aircross","Berlingo","SpaceTourer","Jumpy","Jumper"],
+  "Citroën":["C3","C4","C5 Aircross","Berlingo","SpaceTourer","Jumpy","Jumper"],
   "Opel":["Corsa","Astra","Mokka","Grandland","Insignia","Combo","Vivaro","Movano"],
   "Chevrolet":["Spark","Sonic","Aveo","Cruze","Malibu","Trax","Captiva","Equinox","Traverse","Colorado","Silverado","Camaro","Corvette"],
   "Volvo":["XC40","XC60","XC90","V40","V60","V90","S60","S90","C40"],
@@ -468,7 +468,7 @@ const SA_VEHICLES = {
   "Jeep":["Renegade","Compass","Cherokee","Grand Cherokee","Wrangler","Gladiator","Avenger"],
   "Dodge":["Challenger","Charger","Durango","Ram 1500","Journey","Viper"],
   "Porsche":["911","Cayman","Boxster","Cayenne","Macan","Panamera","Taycan"],
-  "Lamborghini":["HuracÃ¡n","Urus","Revuelto"],
+  "Lamborghini":["Huracán","Urus","Revuelto"],
   "Ferrari":["Roma","Portofino","SF90","488","F8","812","296","GTC4"],
   "Maserati":["Ghibli","Levante","Quattroporte","Grecale","GranTurismo"],
   "Alfa Romeo":["Giulia","Stelvio","Tonale","156","159"],
@@ -493,7 +493,7 @@ const BRAND_DOMAINS = {
   "BMW":"bmw.com","Mercedes-Benz":"mercedes-benz.com","Audi":"audi.com","Mitsubishi":"mitsubishi-motors.com",
   "Isuzu":"isuzu.com","Mazda":"mazda.com","Honda":"honda.com","Hyundai":"hyundai.com",
   "Kia":"kia.com","Suzuki":"suzuki.com","Renault":"renault.com","Peugeot":"peugeot.com",
-  "CitroÃ«n":"citroen.com","Opel":"opel.com","Chevrolet":"chevrolet.com","Volvo":"volvocars.com",
+  "Citroën":"citroen.com","Opel":"opel.com","Chevrolet":"chevrolet.com","Volvo":"volvocars.com",
   "Land Rover":"landrover.com","Jeep":"jeep.com","Dodge":"dodge.com","Porsche":"porsche.com",
   "Lamborghini":"lamborghini.com","Ferrari":"ferrari.com","Maserati":"maserati.com",
   "Alfa Romeo":"alfaromeo.com","Fiat":"fiat.com","GWM":"gwm.co.za","Chery":"chery.com",
@@ -502,9 +502,9 @@ const BRAND_DOMAINS = {
   "Haval":"haval.co.za","BAIC":"baic.co.za","JAC":"jac.co.za",
 };
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // STORAGE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 
 function getUsers(){return JSON.parse(localStorage.getItem('rt_users')||'[]')}
 function saveUsers(u){localStorage.setItem('rt_users',JSON.stringify(u))}
@@ -528,9 +528,9 @@ function currentUser(){
   }
 })();
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // AUTH
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 
 function authTab(tab){
   document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',i===(tab==='login'?0:1)));
@@ -584,9 +584,9 @@ function enterApp(){
   checkMotionBtn();
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // NAVIGATION
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 
 const SECTIONS=['auth','race','vehicle','leaderboard','profile'];
 const NAV_BTNS={race:'nav-race',leaderboard:'nav-leaderboard',profile:'nav-profile'};
@@ -611,9 +611,9 @@ function showSection(id){
 
 function showLeaderboard(){showSection('leaderboard')}
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // RACE STATE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 
 let raceState='idle'; // idle|armed|running|finished
 let raceMode='0100';
@@ -699,21 +699,21 @@ function fmtTime(ms){
 }
 
 function displayResult(t){
-  const modeLabel={'0100':'0-100 km/h','400m':'400m','custom_dist':'Custom Dist','custom_speed':'Custom Speed'};
+  const modeLabel={'0100':'0 to 100 km/h','400m':'400m','custom_dist':'Custom Dist','custom_speed':'Custom Speed'};
   document.getElementById('result-label').textContent=modeLabel[raceMode]||raceMode;
   document.getElementById('result-time').textContent=fmtTime(t);
   document.getElementById('result-speed').textContent=gpsMaxSpeed.toFixed(0);
   document.getElementById('result-dist').textContent=gpsDist.toFixed(0);
   const sp=document.getElementById('result-split');
   if(split100Time>0){
-    sp.innerHTML=`<span class="split-badge">ðŸ 0-100: ${fmtTime(split100Time)}</span>`;
+    sp.innerHTML=`<span class="split-badge">0-100: ${fmtTime(split100Time)}</span>`;
   } else sp.innerHTML='';
   window._pendingResult={timeMs:t,topSpeed:gpsMaxSpeed,distance:gpsDist,split100:split100Time,mode:raceMode};
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // GPS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 
 let gpsWatchId=null;
 
@@ -767,7 +767,7 @@ function onGPS(pos){
   }
 }
 
-function onGPSError(e){setGPSStatus('GPS error â€” '+e.message,'#555')}
+function onGPSError(e){setGPSStatus('GPS error — '+e.message,'#555')}
 
 function setGPSStatus(msg,state,acc=''){
   document.getElementById('gps-status').textContent=msg;
@@ -782,9 +782,9 @@ function haversine(la1,lo1,la2,lo2){
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // ACCELEROMETER
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 
 let motionGranted=false;
 window._latestAccel=0;
@@ -801,7 +801,7 @@ function checkMotionBtn(){
 function requestMotion(){
   DeviceMotionEvent.requestPermission().then(r=>{
     if(r==='granted'){motionGranted=true;listenMotion();document.getElementById('motion-btn').style.display='none';showToast('Motion sensor enabled');}
-    else showToast('Motion denied â€” use GPS or tap start','error');
+    else showToast('Motion denied — use GPS or tap start','error');
   }).catch(()=>showToast('Could not enable motion','error'));
 }
 
@@ -813,9 +813,9 @@ function listenMotion(){
   });
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // WAKE LOCK
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 
 let wakeLock=null;
 async function setWakeLock(on){
@@ -826,9 +826,9 @@ async function setWakeLock(on){
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&raceState==='running')setWakeLock(true)});
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // VEHICLE PICKER
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 
 function populateMakes(){
   const sel=document.getElementById('v-make');
@@ -877,7 +877,7 @@ function updateBrandHeader(make){
   nameEl.textContent=make;
   const model=document.getElementById('v-model').value;
   const year=document.getElementById('v-year').value;
-  subEl.textContent=[model,year].filter(Boolean).join(' Â· ')||'Select model & year';
+  subEl.textContent=[model,year].filter(Boolean).join(' · ')||'Select model & year';
 
   const domain=BRAND_DOMAINS[make];
   if(domain){
@@ -909,7 +909,7 @@ function renderSavedChips(){
     const label=[v.make,v.model,v.year,v.variant].filter(Boolean).join(' ');
     const chip=document.createElement('div');
     chip.className='chip';
-    chip.innerHTML=`<span onclick="applyChip(${i})">${label}</span><span class="chip-remove" onclick="removeChip(${i})">âœ•</span>`;
+    chip.innerHTML=`<span onclick="applyChip(${i})">${label}</span><span class="chip-remove" onclick="removeChip(${i})">✕</span>`;
     chipsEl.appendChild(chip);
   });
 }
@@ -989,9 +989,9 @@ function confirmSaveRun(){
   showSection('race');
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // LEADERBOARD
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 
 let lbCurrentTab='all';
 function lbTab(tab){
@@ -1006,7 +1006,7 @@ function renderLeaderboard(){
   if(lbCurrentTab==='mine')runs=runs.filter(r=>r.userId===u?.id);
 
   const modes=['0100','400m','custom_dist','custom_speed'];
-  const modeLabels={'0100':'0-100 km/h','400m':'400 Metres','custom_dist':'Custom Distance','custom_speed':'Custom Speed'};
+  const modeLabels={'0100':'0-100 km/h','400m':'400 Metres','custom_dist':'Custom Dist','custom_speed':'Custom Speed'};
   const content=document.getElementById('lb-content');
   let html='';
 
@@ -1015,7 +1015,7 @@ function renderLeaderboard(){
     if(mRuns.length===0)continue;
     html+=`<div class="lb-mode-section"><div class="lb-mode-title">${modeLabels[mode]||mode}</div>`;
     mRuns.forEach((r,i)=>{
-      const medals=['ðŸ¥‡','ðŸ¥ˆ','ðŸ¥‰'];
+      const medals=['🥇','🥈','🥉'];
       const rank=i<3?medals[i]:i+1+'.';
       const vehicle=[r.vehicleMake,r.vehicleModel,r.vehicleYear,r.vehicleVariant].filter(Boolean).join(' ');
       const domain=BRAND_DOMAINS[r.vehicleMake];
@@ -1052,9 +1052,9 @@ function clearLeaderboard(){
   renderLeaderboard();
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // PROFILE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 
 function renderProfile(){
   const u=currentUser();
@@ -1068,7 +1068,7 @@ function renderProfile(){
   const topSpeed=runs.reduce((m,r)=>Math.max(m,r.topSpeed||0),0);
   document.getElementById('profile-stats').innerHTML=`
     <div class="pstat"><div class="pstat-val">${runs.length}</div><div class="pstat-key">Runs</div></div>
-    <div class="pstat"><div class="pstat-val">${topSpeed>0?topSpeed.toFixed(0)+'<span style="font-size:12px">km/h</span>':'â€”'}</div><div class="pstat-key">Top Speed</div></div>
+    <div class="pstat"><div class="pstat-val">${topSpeed>0?topSpeed.toFixed(0)+'<span style="font-size:12px">km/h</span>':'—'}</div><div class="pstat-key">Top Speed</div></div>
     <div class="pstat"><div class="pstat-val">${(u.savedVehicles||[]).length}</div><div class="pstat-key">Vehicles</div></div>
   `;
 
@@ -1077,15 +1077,15 @@ function renderProfile(){
   if(svs.length===0){vEl.innerHTML='<div style="color:var(--text-dim);font-size:13px;padding:12px 0">No saved vehicles yet.</div>';return;}
   let html='';
   [...svs].reverse().slice(0,10).forEach((v,i)=>{
-    const label=[v.model,v.year,v.variant].filter(Boolean).join(' Â· ');
+    const label=[v.model,v.year,v.variant].filter(Boolean).join(' · ');
     const domain=BRAND_DOMAINS[v.make];
     const logoHtml=domain
       ?`<img src="https://logo.clearbit.com/${domain}" style="width:26px;height:26px;object-fit:contain" onerror="this.style.display='none'">`
       :`<div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;color:#000;background:linear-gradient(135deg,var(--green),var(--green2));width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center">${v.make.substring(0,2).toUpperCase()}</div>`;
     html+=`<div class="saved-vehicle-item card-3d">
       <div class="svi-logo">${logoHtml}</div>
-      <div class="svi-info"><div class="svi-make">${v.make}</div><div class="svi-detail">${label||'â€”'}</div></div>
-      <button class="svi-remove" onclick="removeProfileVehicle(${i})">Ã—</button>
+      <div class="svi-info"><div class="svi-make">${v.make}</div><div class="svi-detail">${label||'—'}</div></div>
+      <button class="svi-remove" onclick="removeProfileVehicle(${i})">×</button>
     </div>`;
   });
   vEl.innerHTML=html;
@@ -1104,9 +1104,9 @@ function removeProfileVehicle(i){
   renderProfile();
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // TOAST
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 
 let toastTimeout;
 function showToast(msg,type=''){
@@ -1117,9 +1117,9 @@ function showToast(msg,type=''){
   toastTimeout=setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // BOOT
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 
 (function boot(){
   // Restore session
