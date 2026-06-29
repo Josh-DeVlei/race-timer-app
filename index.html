@@ -439,9 +439,9 @@ select option{background:#0a0f1e;color:#e0e0e0}
 </div><!-- #app -->
 
 <script>
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 // DATA
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 
 const SA_VEHICLES = {
   "Toyota":["Hilux","Land Cruiser","Fortuner","Prado","RAV4","Corolla","Camry","Yaris","C-HR","Avanza","Rush","Rumion","HiAce","Quantum","Dyna"],
@@ -502,9 +502,9 @@ const BRAND_DOMAINS = {
   "Haval":"haval.co.za","BAIC":"baic.co.za","JAC":"jac.co.za",
 };
 
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 // STORAGE
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 
 function getUsers(){return JSON.parse(localStorage.getItem('rt_users')||'[]')}
 function saveUsers(u){localStorage.setItem('rt_users',JSON.stringify(u))}
@@ -528,9 +528,9 @@ function currentUser(){
   }
 })();
 
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 // AUTH
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 
 function authTab(tab){
   document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',i===(tab==='login'?0:1)));
@@ -584,9 +584,9 @@ function enterApp(){
   checkMotionBtn();
 }
 
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 // NAVIGATION
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 
 const SECTIONS=['auth','race','vehicle','leaderboard','profile'];
 const NAV_BTNS={race:'nav-race',leaderboard:'nav-leaderboard',profile:'nav-profile'};
@@ -611,9 +611,9 @@ function showSection(id){
 
 function showLeaderboard(){showSection('leaderboard')}
 
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 // RACE STATE
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 
 let raceState='idle'; // idle|armed|running|finished
 let raceMode='0100';
@@ -711,9 +711,9 @@ function displayResult(t){
   window._pendingResult={timeMs:t,topSpeed:gpsMaxSpeed,distance:gpsDist,split100:split100Time,mode:raceMode};
 }
 
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 // GPS
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 
 let gpsWatchId=null;
 
@@ -782,9 +782,9 @@ function haversine(la1,lo1,la2,lo2){
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 // ACCELEROMETER
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 
 let motionGranted=false;
 window._latestAccel=0;
@@ -813,9 +813,9 @@ function listenMotion(){
   });
 }
 
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 // WAKE LOCK
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 
 let wakeLock=null;
 async function setWakeLock(on){
@@ -826,9 +826,9 @@ async function setWakeLock(on){
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&raceState==='running')setWakeLock(true)});
 
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 // VEHICLE PICKER
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 
 function populateMakes(){
   const sel=document.getElementById('v-make');
@@ -989,9 +989,9 @@ function confirmSaveRun(){
   showSection('race');
 }
 
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 // LEADERBOARD
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 
 let lbCurrentTab='all';
 function lbTab(tab){
@@ -1052,9 +1052,9 @@ function clearLeaderboard(){
   renderLeaderboard();
 }
 
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 // PROFILE
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 
 function renderProfile(){
   const u=currentUser();
@@ -1104,9 +1104,9 @@ function removeProfileVehicle(i){
   renderProfile();
 }
 
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 // TOAST
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 
 let toastTimeout;
 function showToast(msg,type=''){
@@ -1117,9 +1117,9 @@ function showToast(msg,type=''){
   toastTimeout=setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 // BOOT
-// ═══════════════════════════════════════════════
+// -----------------------------------------------
 
 (function boot(){
   // Restore session
