@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Race Timer">
+<meta name="theme-color" content="#000000">
+<title>Race Timer</title>
+<style>
+  :root {
+    --bg:      #000000;
+    --card:    #111111;
+    --border:  #1c1c1c;
+    --green:   #00FF41;
+    --gold:    #FFD700;
+    --red:     #FF4444;
+    --dim:     #555555;
+    --text:    #cccccc;
+    --white:   #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  html, body { height: 100%; background: var(--bg); color: var(--white); font-family: 'Courier New', monospace; overflow-x: hidden; }
+  body { display: flex; flex-direction: column; }
+
+  section { display: none; flex-direction: column; flex: 1; padding: 12px 14px 20px; overflow-y: auto; }
+  section.active { display: flex; }
+
+  /* ── Buttons ─────────────────────────────────────────── */
+  .btn {
+    border: none; outline: none; cursor: pointer; border-radius: 6px;
+    font-family: inherit; font-weight: bold; letter-spacing: 0.05em;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity .15s;
+  }
+  .btn:active { opacity: .7; }
+  .btn-sm  { height: 36px; font-size: 12px; padding: 0 12px; }
+  .btn-md  { height: 48px; font-size: 14px; }
+  .btn-lg  { height: 60px; font-size: 18px; }
+  .btn-xl  { height: 68px; font-size: 20px; }
+  .btn-dark  { background: var(--border); color: var(--green); }
+  .btn-green { background: var(--green);  color: #000; }
+  .btn-red   { background: var(--red);    color: #000; }
+  .btn-gold  { background: var(--gold);   color: #000; }
+  .btn-dim   { background: var(--border); color: var(--dim); }
+  .btn:disabled { opacity: .35; pointer-events: none; }
+  .w100 { width: 100%; }
+  .mb4  { margin-bottom: 4px; }
+  .mb6  { margin-bottom: 6px; }
+  .mb8  { margin-bottom: 8px; }
+  .mb12 { margin-bottom: 12px; }
+  .mb16 { margin-bottom: 16px; }
+
+  /* ── Mode row ─────────────────────────────────────────── */
+  .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 4px; }
+  .mode-btn { opacity: .4; }
+  .mode-btn.active { opacity: 1; border: 1px solid var(--green); }
+
+  /* ── GPS strip ───────────────────────────────────────── */
+  #gpsStatus { font-size: 13px; color: var(--dim); text-align: center; margin-bottom: 2px; }
+
+  /* ── Status ──────────────────────────────────────────── */
+  #statusLine { font-size: 15px; color: #888; text-align: center; margin-bottom: 2px; }
+
+  /* ── Timer ───────────────────────────────────────────── */
+  #timer {
+    font-size: clamp(3.5rem, 18vw, 7rem);
+    text-align: center;
+    color: var(--white);
+    line-height: 1;
+    margin: 4px 0;
+    letter-spacing: -2px;
+  }
+  #timer.running  { color: var(--green); }
+  #timer.finished { color: var(--gold); }
+
+  /* ── Speed ───────────────────────────────────────────── */
+  #speedDisplay { font-size: clamp(1.4rem, 7vw, 2rem); text-align: center; color: #aaa; margin-bottom: 6px; }
+
+  /* ── Progress ────────────────────────────────────────── */
+  #progressWrap { margin-bottom: 4px; display: none; }
+  #progressLabel { font-size: 14px; color: var(--green); text-align: center; margin-bottom: 4px; }
+  .progress-track { background: var(--border); border-radius: 6px; height: 10px; overflow: hidden; }
+  .progress-fill  { background: var(--green); height: 100%; width: 0%; transition: width .2s linear; border-radius: 6px; }
+
+  /* ── Config btn ──────────────────────────────────────── */
+  #cfgBtn { font-size: 12px; color: #aaa; background: #0d1a0d; border: none; display: none; }
+
+  /* ── Hint ────────────────────────────────────────────── */
+  #hint { font-size: 12px; color: var(--dim); text-align: center; min-height: 18px; margin-bottom: 4px; }
+
+  /* ── Motion permission banner ────────────────────────── */
+  #motionBanner {
+    background: #1a1000; border: 1px solid var(--gold);
+    border-radius: 6px; padding: 10px 14px; margin-bottom: 8px;
+    font-size: 13px; color: var(--gold); text-align: center; display: none;
+  }
+  #motionBanner p { margin-bottom: 8px; }
+
+  /* ── Recent runs ─────────────────────────────────────── */
+  .section-label { font-size: 11px; color: #444; letter-spacing: .12em; margin-bottom: 4px; }
+  #recentRuns { font-size: 12px; color: #666; line-height: 1.7; white-space: pre-wrap; }
+
+  /* ── Bottom row ──────────────────────────────────────── */
+  .bottom-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .bottom-row .section-label { flex: 1; margin: 0; }
+
+  /* ── Leaderboard section ─────────────────────────────── */
+  #leaderboard h2 { font-size: 20px; color: var(--gold); text-align: center; margin-bottom: 16px; }
+  .lb-mode { margin-bottom: 20px; }
+  .lb-mode-title {
+    font-size: 13px; color: var(--dim); letter-spacing: .1em;
+    border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 8px;
+  }
+  .lb-row { margin-bottom: 10px; }
+  .lb-pos { font-size: 18px; vertical-align: middle; margin-right: 4px; }
+  .lb-vehicle { font-size: 14px; color: var(--white); }
+  .lb-details { font-size: 12px; color: #777; padding-left: 28px; margin-top: 2px; }
+  .lb-empty { font-size: 13px; color: var(--dim); text-align: center; margin-top: 40px; }
+
+  /* ── Vehicle section ─────────────────────────────────── */
+  #vehicle h2 { font-size: 18px; color: var(--white); text-align: center; margin-bottom: 16px; }
+  .field-label { font-size: 12px; color: var(--dim); margin-bottom: 4px; }
+  select {
+    width: 100%; background: var(--border); color: var(--white);
+    border: 1px solid #333; border-radius: 6px; padding: 10px 12px;
+    font-family: inherit; font-size: 15px; margin-bottom: 14px;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%23555'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+  }
+  select:focus { outline: none; border-color: var(--green); }
+
+  /* ── Run summary card ────────────────────────────────── */
+  .run-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; margin-bottom: 16px; font-size: 13px; color: #aaa; line-height: 1.8;
+  }
+  .run-card .time { font-size: 2rem; color: var(--gold); display: block; text-align: center; margin-bottom: 4px; }
+
+  /* ── Back btn ────────────────────────────────────────── */
+  .back-btn { background: none; border: none; color: var(--green); font-size: 14px; cursor: pointer; padding: 0 0 12px; display: inline-flex; align-items: center; gap: 6px; }
+
+  /* ── Custom config modal ─────────────────────────────── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.85);
+    display: flex; align-items: center; justify-content: center; z-index: 100;
+    display: none;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #111; border: 1px solid #333; border-radius: 10px;
+    padding: 24px; width: min(340px, 90vw);
+  }
+  .modal h3 { color: var(--white); margin-bottom: 8px; font-size: 16px; }
+  .modal p  { color: var(--dim); font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
+  .modal input {
+    width: 100%; background: var(--border); color: var(--white);
+    border: 1px solid #333; border-radius: 6px; padding: 10px 12px;
+    font-family: inherit; font-size: 16px; margin-bottom: 16px;
+  }
+  .modal input:focus { outline: none; border-color: var(--green); }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-btns .btn { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ RACE SCREEN ═══════════════════════════════ -->
+<section id="race" class="active">
+
+  <!-- Mode buttons -->
+  <div class="mode-row mb4">
+    <button class="btn btn-dark btn-md mode-btn active" id="m0100">0–100 km/h</button>
+    <button class="btn btn-dark btn-md mode-btn"        id="m400">400 m</button>
+  </div>
+  <div class="mode-row mb6">
+    <button class="btn btn-dark btn-md mode-btn" id="mDist">Custom Dist</button>
+    <button class="btn btn-dark btn-md mode-btn" id="mSpd">Custom Speed</button>
+  </div>
+
+  <!-- Custom config -->
+  <button class="btn btn-md w100 mb6" id="cfgBtn">⚙  Target: 200 m — tap to change</button>
+
+  <!-- Motion permission banner (iOS only) -->
+  <div id="motionBanner">
+    <p>⚠️ iPhone requires permission to use the motion sensor for launch detection.</p>
+    <button class="btn btn-gold btn-sm" id="motionPermBtn">Enable Motion Sensor</button>
+  </div>
+
+  <!-- GPS status -->
+  <div id="gpsStatus">GPS: waiting for fix…</div>
+  <div id="statusLine">READY</div>
+
+  <!-- Big timer -->
+  <div id="timer">0:00.000</div>
+
+  <!-- Speed -->
+  <div id="speedDisplay">0.0 km/h</div>
+
+  <!-- Progress (hidden in 0-100 mode) -->
+  <div id="progressWrap">
+    <div id="progressLabel">0 / 400 m</div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <!-- Hint / manual start hint -->
+  <div id="hint"></div>
+
+  <!-- SAVE RUN (only after finish) -->
+  <button class="btn btn-green btn-lg w100 mb8" id="saveBtn" style="display:none">SAVE RUN</button>
+
+  <!-- ARM / RESET -->
+  <button class="btn btn-red btn-xl w100 mb8" id="armBtn">ARM</button>
+
+  <!-- Manual start (only when ARMED) -->
+  <button class="btn btn-dim btn-md w100 mb12" id="manualBtn" style="display:none">TAP TO START MANUALLY</button>
+
+  <!-- Recent runs + leaderboard link -->
+  <div class="bottom-row">
+    <div class="section-label">RECENT RUNS</div>
+    <button class="btn btn-dark btn-sm" id="lbBtn">🏆 LEADERBOARD</button>
+  </div>
+  <div id="recentRuns">No runs yet</div>
+</section>
+
+<!-- ═══════════════════════════════ VEHICLE SECTION ═══════════════════════════ -->
+<section id="vehicle">
+  <button class="back-btn" id="vehicleBack">← Back</button>
+  <h2>Vehicle Details</h2>
+
+  <div class="run-card" id="runSummaryCard">
+    <span class="time" id="runSummaryTime">0:00.000</span>
+    <span id="runSummaryDetails"></span>
+  </div>
+
+  <div class="field-label">Make</div>
+  <select id="selMake"><option value="">Select Make…</option></select>
+
+  <div class="field-label">Model</div>
+  <select id="selModel"><option value="">Select Model…</option></select>
+
+  <div class="field-label">Year</div>
+  <select id="selYear"><option value="">Select Year…</option></select>
+
+  <button class="btn btn-green btn-lg w100" id="confirmSaveBtn">Save to Leaderboard</button>
+</section>
+
+<!-- ═══════════════════════════════ LEADERBOARD ═══════════════════════════════ -->
+<section id="leaderboard">
+  <button class="back-btn" id="lbBack">← Back</button>
+  <h2>🏆 Leaderboard</h2>
+  <div id="lbContent"></div>
+  <button class="btn btn-dim btn-sm w100" id="clearBtn" style="margin-top:16px">Clear All Runs</button>
+</section>
+
+<!-- Custom config modal -->
+<div class="modal-overlay" id="cfgModal">
+  <div class="modal">
+    <h3 id="cfgTitle">Set Distance Target</h3>
+    <p id="cfgDesc">Enter distance in metres (50 – 10000)</p>
+    <input type="number" id="cfgInput" inputmode="numeric" placeholder="e.g. 200">
+    <div class="modal-btns">
+      <button class="btn btn-dim btn-md" id="cfgCancel">Cancel</button>
+      <button class="btn btn-green btn-md" id="cfgConfirm">Set</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════════
+//  SA VEHICLE DATA
+// ══════════════════════════════════════════════════════════
+const VEHICLES = {
+  "Alfa Romeo":    ["Giulia","Giulia Quadrifoglio","Stelvio","Stelvio Quadrifoglio","Tonale"],
+  "Audi":          ["A1","A3","A3 Sportback","A4","A5","A6","A7","A8","e-tron","e-tron GT","Q2","Q3","Q5","Q7","Q8","R8","RS3","RS4","RS5","RS6","RS7","RS e-tron GT","RS Q3","RS Q8","S3","S4","S5","S6","S7","S8","SQ5","SQ7","SQ8","TT","TTS"],
+  "BAIC":          ["BJ40","D20","X25","X35","X55"],
+  "BMW":           ["1 Series","2 Series","2 Series Gran Coupé","3 Series","4 Series","5 Series","7 Series","8 Series","i3","i4","i7","iX","iX1","iX3","M2","M3","M4","M5","M8","X1","X2","X3","X4","X5","X6","X7","XM","Z4"],
+  "Chery":         ["Omoda 5","Tiggo 4","Tiggo 4 Pro","Tiggo 7 Pro","Tiggo 8 Pro","Tiggo 8 Pro Max"],
+  "Citroën":       ["C3","C3 Aircross","C5 Aircross"],
+  "Ferrari":       ["296 GTB","296 GTS","812 Superfast","F8 Tributo","Purosangue","Roma","SF90 Stradale"],
+  "Ford":          ["Bronco","EcoSport","Everest","Fiesta","Focus","Focus ST","Kuga","Mustang","Mustang Mach-E","Puma","Puma ST","Ranger","Ranger Raptor","Territory"],
+  "GWM":           ["P-Series","Steed 5","Steed 6"],
+  "Haval":         ["Chitu","Dargo","F7","H2","H6","Jolion"],
+  "Honda":         ["Ballade","Civic","Civic Type R","CR-V","HR-V","Jazz","WR-V"],
+  "Hyundai":       ["Creta","Elantra","Grand i10","H-1","i10","i20","i20N","i30","i30N","i30 Fastback","IONIQ 5","IONIQ 6","Kona","Palisade","Santa Fe","Staria","Tucson","Venue"],
+  "Infiniti":      ["Q50","Q60","QX50","QX55","QX60","QX80"],
+  "Isuzu":         ["D-Max","MU-X"],
+  "JAC":           ["JS4","T8 Pro"],
+  "Jaguar":        ["E-Pace","F-Pace","F-Pace SVR","F-Type","I-Pace","XE","XF"],
+  "Jeep":          ["Cherokee","Compass","Gladiator","Grand Cherokee","Grand Cherokee 4xe","Renegade","Wrangler","Wrangler 4xe"],
+  "Kia":           ["Carnival","EV6","Niro","Picanto","Rio","Seltos","Sorento","Sportage","Stonic","Telluride"],
+  "Lamborghini":   ["Huracán","Huracán STO","Revuelto","Urus","Urus Performante"],
+  "Land Rover":    ["Defender","Defender 90","Defender 110","Discovery","Discovery Sport","Freelander","Range Rover","Range Rover Evoque","Range Rover Sport","Range Rover Sport SVR","Range Rover Velar"],
+  "Lexus":         ["IS","IS 500","LC","LC 500","LS","LX","NX","NX 450h+","RC","RC-F","RX","RZ","UX"],
+  "Mahindra":      ["Pik Up","Scorpio","XUV300"],
+  "Maserati":      ["GranTurismo","Grecale","Levante","Quattroporte"],
+  "Mazda":         ["CX-3","CX-5","CX-60","CX-8","Mazda2","Mazda3","Mazda3 Fastback","MX-5","MX-5 RF"],
+  "McLaren":       ["570S","600LT","620R","720S","765LT","Artura","GT"],
+  "Mercedes-Benz": ["A-Class","A 45 AMG","AMG GT","AMG GT 63","C-Class","C 63 AMG","CLA","CLE","E-Class","EQA","EQB","EQC","EQE","EQS","G-Class","G 63 AMG","GLA","GLB","GLC","GLE","GLE 63 AMG","GLS","S-Class","SL","V-Class"],
+  "Mitsubishi":    ["ASX","Eclipse Cross","Outlander","Pajero Sport","Triton"],
+  "Nissan":        ["370Z","Almera","Frontier","GT-R","Kicks","Magnite","Micra","Navara","Note","Patrol","X-Trail"],
+  "Peugeot":       ["2008","208","3008","308","408","5008","Landtrek"],
+  "Porsche":       ["718 Boxster","718 Cayman","718 Spyder","911 Carrera","911 GT3","911 GT3 RS","911 Turbo","Cayenne","Cayenne GTS","Cayenne Turbo","Macan","Panamera","Taycan"],
+  "Renault":       ["Captur","Clio","Duster","Kardian","Kiger","Koleos","Kwid","Megane","Sandero","Sandero Stepway","Triber"],
+  "Subaru":        ["BRZ","Forester","Impreza","Outback","WRX","WRX STI","XV"],
+  "Suzuki":        ["Baleno","Ertiga","Fronx","Grand Vitara","Ignis","Jimny","S-Presso","Swift","Swift Sport","Vitara"],
+  "Toyota":        ["Agya","C-HR","Corolla","Corolla Cross","Corolla GR Sport","Fortuner","GR86","GR Corolla","GR Supra","Hilux","Land Cruiser 70","Land Cruiser 300","Prado","RAV4","RAV4 Hybrid","Rush","Starlet","Vios","Yaris","Yaris Cross"],
+  "Volkswagen":    ["Amarok","Caddy","Golf","Golf GTI","Golf R","ID.3","ID.4","ID.5","Passat","Polo","Polo GTI","Polo Vivo","T-Cross","T-Roc","T-Roc R","Tiguan","Tiguan Allspace","Touareg","Touareg R","Transporter"],
+  "Volvo":         ["C40 Recharge","EX30","EX90","S60","S90","V60","V90","XC40","XC40 Recharge","XC60","XC90"]
+};
+
+const YEARS = Array.from({length: 2026 - 1990 + 1}, (_, i) => String(2026 - i));
+
+// ══════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════
+const MODE = { M0100: '0-100', M400: '400m', DIST: 'custom-dist', SPD: 'custom-speed' };
+
+let phase = 'IDLE'; // IDLE | ARMED | RUNNING | FINISHED
+let mode  = MODE.M0100;
+let customValue = 200; // metres or km/h
+
+let startTime   = null;  // performance.now()
+let finishTime  = null;
+let split100Ms  = null;
+let distance    = 0;
+let topSpeed    = 0;
+let lastCoords  = null;
+let currentSpeedKmh = 0;
+let gpsAccuracy = 0;
+let gpsFixed    = false;
+
+let motionGranted = false;
+let wakeLock      = null;
+
+const sessionResults = [];
+
+// ══════════════════════════════════════════════════════════
+//  DOM REFS
+// ══════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+
+const timerEl       = $('timer');
+const speedEl       = $('speedDisplay');
+const statusEl      = $('statusLine');
+const gpsEl         = $('gpsStatus');
+const hintEl        = $('hint');
+const progressWrap  = $('progressWrap');
+const progressLabel = $('progressLabel');
+const progressFill  = $('progressFill');
+const saveBtn       = $('saveBtn');
+const armBtn        = $('armBtn');
+const manualBtn     = $('manualBtn');
+const recentEl      = $('recentRuns');
+const cfgBtn        = $('cfgBtn');
+const motionBanner  = $('motionBanner');
+
+// ══════════════════════════════════════════════════════════
+//  SECTION ROUTER
+// ══════════════════════════════════════════════════════════
+function showSection(id) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════
+//  GPS
+// ══════════════════════════════════════════════════════════
+let gpsWatchId = null;
+
+function startGPS() {
+  if (gpsWatchId !== null) return;
+  gpsWatchId = navigator.geolocation.watchPosition(onGPS, onGPSError, {
+    enableHighAccuracy: true, maximumAge: 0, timeout: 10000
+  });
+}
+
+function onGPS(pos) {
+  gpsFixed     = true;
+  gpsAccuracy  = pos.coords.accuracy;
+  const spd    = pos.coords.speed;
+  currentSpeedKmh = (spd != null && spd >= 0) ? spd * 3.6 : currentSpeedKmh;
+
+  if (phase === 'ARMED') {
+    if (lastCoords) accumulateDistance(pos.coords);
+    lastCoords = pos.coords;
+    if (currentSpeedKmh > 8) doLaunch();
+  } else if (phase === 'RUNNING') {
+    if (currentSpeedKmh > topSpeed) topSpeed = currentSpeedKmh;
+    if (split100Ms === null && currentSpeedKmh >= 100 &&
+        (mode === MODE.M400 || mode === MODE.DIST)) {
+      split100Ms = performance.now() - startTime;
+    }
+    if (lastCoords) accumulateDistance(pos.coords);
+    lastCoords = pos.coords;
+    checkFinish();
+  } else {
+    lastCoords = pos.coords;
+  }
+  renderUI();
+}
+
+function onGPSError(err) {
+  gpsEl.textContent = 'GPS error: ' + err.message;
+}
+
+function accumulateDistance(coords) {
+  if (!lastCoords) return;
+  distance += haversine(lastCoords.latitude, lastCoords.longitude,
+                        coords.latitude,     coords.longitude);
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R  = 6371000;
+  const dL = (lat2 - lat1) * Math.PI / 180;
+  const dl = (lon2 - lon1) * Math.PI / 180;
+  const a  = Math.sin(dL/2)**2 +
+             Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dl/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function checkFinish() {
+  switch (mode) {
+    case MODE.M0100: if (currentSpeedKmh >= 100)         doFinish(); break;
+    case MODE.M400:  if (distance >= 400)                doFinish(); break;
+    case MODE.DIST:  if (distance >= customValue)        doFinish(); break;
+    case MODE.SPD:   if (currentSpeedKmh >= customValue) doFinish(); break;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  ACCELEROMETER
+// ══════════════════════════════════════════════════════════
+function startMotion() {
+  window.addEventListener('devicemotion', onMotion);
+}
+
+function stopMotion() {
+  window.removeEventListener('devicemotion', onMotion);
+}
+
+function onMotion(e) {
+  if (phase !== 'ARMED') return;
+  const a = e.acceleration;
+  if (!a || a.x == null) return;
+  const mag = Math.sqrt(a.x**2 + a.y**2 + a.z**2);
+  if (mag > 2.5) doLaunch();
+}
+
+async function requestMotionPermission() {
+  if (typeof DeviceMotionEvent !== 'undefined' &&
+      typeof DeviceMotionEvent.requestPermission === 'function') {
+    try {
+      const result = await DeviceMotionEvent.requestPermission();
+      motionGranted = result === 'granted';
+    } catch { motionGranted = false; }
+  } else {
+    motionGranted = true; // Android — no gate needed
+  }
+  return motionGranted;
+}
+
+function checkIOSMotionBanner() {
+  if (typeof DeviceMotionEvent !== 'undefined' &&
+      typeof DeviceMotionEvent.requestPermission === 'function' &&
+      !motionGranted) {
+    motionBanner.style.display = 'block';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  WAKE LOCK
+// ══════════════════════════════════════════════════════════
+async function acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try { wakeLock = await navigator.wakeLock.request('screen'); } catch { /* non-fatal */ }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && (phase === 'RUNNING' || phase === 'ARMED')) {
+    await acquireWakeLock();
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+//  TIMER RAF LOOP
+// ══════════════════════════════════════════════════════════
+let rafId = null;
+
+function startTimerLoop() {
+  function tick() {
+    if (phase !== 'RUNNING') return;
+    renderTimer(performance.now() - startTime);
+    rafId = requestAnimationFrame(tick);
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+function stopTimerLoop() {
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+}
+
+// ══════════════════════════════════════════════════════════
+//  STATE TRANSITIONS
+// ══════════════════════════════════════════════════════════
+function arm() {
+  resetRunData();
+  phase = 'ARMED';
+  if (motionGranted) startMotion();
+  acquireWakeLock();
+  renderUI();
+}
+
+function disarm() {
+  stopMotion();
+}
+
+function doLaunch() {
+  if (phase !== 'ARMED') return;
+  startTime  = performance.now();
+  distance   = 0;
+  topSpeed   = 0;
+  lastCoords = null;
+  phase      = 'RUNNING';
+  stopMotion();
+  startTimerLoop();
+  renderUI();
+}
+
+function doFinish() {
+  if (phase !== 'RUNNING') return;
+  finishTime = performance.now();
+  phase      = 'FINISHED';
+  stopTimerLoop();
+  releaseWakeLock();
+
+  const elapsedMs = finishTime - startTime;
+  const s100 = split100Ms ? `  0-100: ${fmtTime(split100Ms)}` : '';
+  let entry;
+  switch (mode) {
+    case MODE.M0100: entry = `0-100  ${fmtTime(elapsedMs)}  top: ${topSpeed.toFixed(0)} km/h`; break;
+    case MODE.M400:  entry = `400m   ${fmtTime(elapsedMs)}${s100}  top: ${topSpeed.toFixed(0)} km/h`; break;
+    case MODE.DIST:  entry = `${customValue}m  ${fmtTime(elapsedMs)}${s100}  top: ${topSpeed.toFixed(0)} km/h`; break;
+    case MODE.SPD:   entry = `0-${customValue}  ${fmtTime(elapsedMs)}  dist: ${distance.toFixed(0)} m`; break;
+  }
+  sessionResults.unshift(entry);
+  if (sessionResults.length > 5) sessionResults.pop();
+
+  renderUI();
+}
+
+function resetRun() {
+  stopTimerLoop();
+  disarm();
+  releaseWakeLock();
+  phase = 'IDLE';
+  resetRunData();
+  renderUI();
+}
+
+function resetRunData() {
+  startTime   = null;
+  finishTime  = null;
+  split100Ms  = null;
+  distance    = 0;
+  topSpeed    = 0;
+  lastCoords  = null;
+}
+
+function onArmBtn() {
+  switch (phase) {
+    case 'IDLE':
+    case 'FINISHED': arm(); break;
+    case 'ARMED':    disarm(); phase = 'IDLE'; renderUI(); break;
+    case 'RUNNING':  resetRun(); break;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  MODE
+// ══════════════════════════════════════════════════════════
+function setMode(m) {
+  if (phase === 'RUNNING') return;
+  mode = m;
+  resetRun();
+
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  const map = { [MODE.M0100]: 'm0100', [MODE.M400]: 'm400', [MODE.DIST]: 'mDist', [MODE.SPD]: 'mSpd' };
+  $(map[m]).classList.add('active');
+
+  const showProg = m !== MODE.M0100;
+  progressWrap.style.display = showProg ? 'block' : 'none';
+
+  const showCfg = m === MODE.DIST || m === MODE.SPD;
+  cfgBtn.style.display = showCfg ? '' : 'none';
+  updateCfgLabel();
+  renderUI();
+}
+
+function updateCfgLabel() {
+  if (mode === MODE.DIST) cfgBtn.textContent = `⚙  Target distance: ${customValue} m — tap to change`;
+  if (mode === MODE.SPD)  cfgBtn.textContent = `⚙  Target speed: ${customValue} km/h — tap to change`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  RENDER UI
+// ══════════════════════════════════════════════════════════
+function renderUI() {
+  // Timer
+  const elapsed = phase === 'RUNNING'  ? performance.now() - startTime
+                : phase === 'FINISHED' ? finishTime - startTime : 0;
+  renderTimer(elapsed);
+
+  timerEl.className = phase === 'RUNNING' ? 'running' : phase === 'FINISHED' ? 'finished' : '';
+
+  // Speed
+  speedEl.textContent = currentSpeedKmh.toFixed(1) + ' km/h';
+
+  // GPS strip
+  gpsEl.textContent = gpsFixed
+    ? `GPS ±${gpsAccuracy.toFixed(0)} m  |  ${currentSpeedKmh.toFixed(1)} km/h`
+    : 'GPS: waiting for fix…';
+
+  // Status
+  let status;
+  switch (phase) {
+    case 'IDLE':
+      status = gpsFixed ? 'READY — GPS locked' : 'READY — acquiring GPS…'; break;
+    case 'ARMED':
+      status = 'ARMED — launch to start'; break;
+    case 'RUNNING':
+      switch (mode) {
+        case MODE.M0100: status = `${currentSpeedKmh.toFixed(1)} / 100 km/h`; break;
+        case MODE.M400:  status = `${distance.toFixed(0)} / 400 m`; break;
+        case MODE.DIST:  status = `${distance.toFixed(0)} / ${customValue} m`; break;
+        case MODE.SPD:   status = `${currentSpeedKmh.toFixed(1)} / ${customValue} km/h`; break;
+      }
+      break;
+    case 'FINISHED':
+      const s100 = split100Ms ? `  0-100: ${fmtTime(split100Ms)}` : '';
+      switch (mode) {
+        case MODE.M0100: status = `0–100: ${fmtTime(finishTime - startTime)}`; break;
+        case MODE.M400:  status = `400m: ${fmtTime(finishTime - startTime)}${s100}  top ${topSpeed.toFixed(0)} km/h`; break;
+        case MODE.DIST:  status = `${customValue}m: ${fmtTime(finishTime - startTime)}${s100}  top ${topSpeed.toFixed(0)} km/h`; break;
+        case MODE.SPD:   status = `0-${customValue}: ${fmtTime(finishTime - startTime)}  ${distance.toFixed(0)} m`; break;
+      }
+      break;
+  }
+  statusEl.textContent = status;
+
+  // Progress bar
+  if (mode !== MODE.M0100) {
+    let pct = 0, label = '';
+    switch (mode) {
+      case MODE.M400:
+        pct   = Math.min(distance / 400 * 100, 100);
+        label = `${distance.toFixed(0)} / 400 m`; break;
+      case MODE.DIST:
+        pct   = Math.min(distance / customValue * 100, 100);
+        label = `${distance.toFixed(0)} / ${customValue} m`; break;
+      case MODE.SPD:
+        pct   = Math.min(currentSpeedKmh / customValue * 100, 100);
+        label = `${currentSpeedKmh.toFixed(1)} / ${customValue} km/h`; break;
+    }
+    progressFill.style.width  = pct + '%';
+    progressLabel.textContent = label;
+  }
+
+  // ARM button
+  const armLabels = { IDLE: 'ARM', ARMED: 'CANCEL', RUNNING: 'RESET', FINISHED: 'ARM' };
+  armBtn.textContent = armLabels[phase];
+  armBtn.className   = 'btn btn-xl w100 mb8 ' +
+    (phase === 'ARMED'    ? 'btn-green' :
+     phase === 'RUNNING'  ? 'btn-red'   :
+     phase === 'FINISHED' ? 'btn-gold'  : 'btn-red');
+
+  // Save / manual
+  saveBtn.style.display   = phase === 'FINISHED' ? '' : 'none';
+  manualBtn.style.display = phase === 'ARMED'    ? '' : 'none';
+  hintEl.textContent      = phase === 'ARMED'
+    ? 'Accelerometer + GPS launch detection active' : '';
+
+  // Recent runs
+  recentEl.textContent = sessionResults.length ? sessionResults.join('\n') : 'No runs yet';
+}
+
+function renderTimer(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const min      = Math.floor(totalSec / 60);
+  const sec      = totalSec % 60;
+  const mil      = Math.floor(ms % 1000);
+  timerEl.textContent = `${min}:${String(sec).padStart(2,'0')}.${String(mil).padStart(3,'0')}`;
+}
+
+function fmtTime(ms) {
+  const totalSec = Math.floor(ms / 1000);
+  const min      = Math.floor(totalSec / 60);
+  const sec      = totalSec % 60;
+  const mil      = Math.floor(ms % 1000);
+  return `${min}:${String(sec).padStart(2,'0')}.${String(mil).padStart(3,'0')}`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  STORAGE
+// ══════════════════════════════════════════════════════════
+const STORE_KEY = 'raceTimerRecords';
+
+function loadRuns() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveRun(make, model, year) {
+  const runs = loadRuns();
+  const elapsedMs = Math.round(finishTime - startTime);
+  runs.push({
+    date:         new Date().toLocaleString('en-ZA'),
+    mode:         modeLabel(),
+    time:         fmtTime(elapsedMs),
+    timeMs:       elapsedMs,
+    distance:     distance.toFixed(0),
+    topSpeed:     topSpeed.toFixed(1),
+    vehicleMake:  make,
+    vehicleModel: model,
+    vehicleYear:  year,
+    split100:     split100Ms ? fmtTime(split100Ms) : null
+  });
+  localStorage.setItem(STORE_KEY, JSON.stringify(runs));
+}
+
+function modeLabel() {
+  switch (mode) {
+    case MODE.M0100: return '0-100';
+    case MODE.M400:  return '400m';
+    case MODE.DIST:  return `${customValue}m`;
+    case MODE.SPD:   return `0-${customValue}`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  VEHICLE PICKER SECTION
+// ══════════════════════════════════════════════════════════
+const selMake  = $('selMake');
+const selModel = $('selModel');
+const selYear  = $('selYear');
+
+function initVehiclePicker() {
+  // Populate makes
+  Object.keys(VEHICLES).forEach(make => {
+    const opt = document.createElement('option');
+    opt.value = make; opt.textContent = make;
+    selMake.appendChild(opt);
+  });
+
+  // Populate years
+  YEARS.forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    selYear.appendChild(opt);
+  });
+
+  selMake.addEventListener('change', () => {
+    selModel.innerHTML = '<option value="">Select Model…</option>';
+    const models = VEHICLES[selMake.value] || [];
+    models.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m; opt.textContent = m;
+      selModel.appendChild(opt);
+    });
+  });
+}
+
+function openVehicleSection() {
+  const elapsedMs = Math.round(finishTime - startTime);
+  $('runSummaryTime').textContent = fmtTime(elapsedMs);
+
+  const s100 = split100Ms ? `  0-100: ${fmtTime(split100Ms)}` : '';
+  let details;
+  switch (mode) {
+    case MODE.M0100: details = `0–100 km/h  |  Top: ${topSpeed.toFixed(0)} km/h`; break;
+    case MODE.M400:  details = `400 m${s100}  |  Top: ${topSpeed.toFixed(0)} km/h`; break;
+    case MODE.DIST:  details = `${customValue} m${s100}  |  Top: ${topSpeed.toFixed(0)} km/h`; break;
+    case MODE.SPD:   details = `0–${customValue} km/h  |  ${distance.toFixed(0)} m`; break;
+  }
+  $('runSummaryDetails').textContent = details;
+
+  // Reset selects
+  selMake.value  = '';
+  selModel.innerHTML = '<option value="">Select Model…</option>';
+  selYear.value  = '';
+
+  showSection('vehicle');
+}
+
+// ══════════════════════════════════════════════════════════
+//  LEADERBOARD SECTION
+// ══════════════════════════════════════════════════════════
+function renderLeaderboard() {
+  const runs = loadRuns();
+  const lbContent = $('lbContent');
+  lbContent.innerHTML = '';
+
+  if (runs.length === 0) {
+    lbContent.innerHTML = '<p class="lb-empty">No saved runs yet.<br>Finish a run and tap SAVE RUN.</p>';
+    return;
+  }
+
+  // Group by mode
+  const groups = {};
+  runs.forEach(r => { (groups[r.mode] = groups[r.mode] || []).push(r); });
+
+  const medals = ['🥇', '🥈', '🥉'];
+
+  Object.entries(groups).forEach(([modeName, modeRuns]) => {
+    modeRuns.sort((a, b) => a.timeMs - b.timeMs);
+
+    const section = document.createElement('div');
+    section.className = 'lb-mode';
+
+    const title = document.createElement('div');
+    title.className = 'lb-mode-title';
+    title.textContent = `━━  ${modeName}  ━━`;
+    section.appendChild(title);
+
+    modeRuns.forEach((run, idx) => {
+      const row = document.createElement('div');
+      row.className = 'lb-row';
+
+      const vehicle = [run.vehicleYear, run.vehicleMake, run.vehicleModel]
+        .filter(Boolean).join(' ') || 'Unknown vehicle';
+
+      const medal = medals[idx] || `${idx + 1}.`;
+
+      row.innerHTML = `
+        <div class="lb-vehicle"><span class="lb-pos">${medal}</span>${vehicle}</div>
+        <div class="lb-details">⏱ ${run.time}  &nbsp;🏎 ${run.topSpeed} km/h  &nbsp;📅 ${run.date}${run.split100 ? `<br>0-100: ${run.split100}` : ''}</div>
+      `;
+      section.appendChild(row);
+    });
+
+    lbContent.appendChild(section);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  CUSTOM CONFIG MODAL
+// ══════════════════════════════════════════════════════════
+function openCfgModal() {
+  const isSpd = mode === MODE.SPD;
+  $('cfgTitle').textContent = isSpd ? 'Set Speed Target' : 'Set Distance Target';
+  $('cfgDesc').textContent  = isSpd
+    ? 'Enter target speed in km/h (10 – 300)'
+    : 'Enter distance in metres (50 – 10 000)';
+  $('cfgInput').value       = customValue;
+  $('cfgInput').placeholder = isSpd ? 'e.g. 150' : 'e.g. 200';
+  $('cfgModal').classList.add('open');
+  $('cfgInput').focus();
+}
+
+function closeCfgModal() { $('cfgModal').classList.remove('open'); }
+
+// ══════════════════════════════════════════════════════════
+//  EVENT WIRING
+// ══════════════════════════════════════════════════════════
+$('m0100').addEventListener('click', () => setMode(MODE.M0100));
+$('m400').addEventListener('click',  () => setMode(MODE.M400));
+$('mDist').addEventListener('click', () => setMode(MODE.DIST));
+$('mSpd').addEventListener('click',  () => setMode(MODE.SPD));
+
+cfgBtn.addEventListener('click', openCfgModal);
+$('cfgCancel').addEventListener('click', closeCfgModal);
+$('cfgConfirm').addEventListener('click', () => {
+  const v = parseInt($('cfgInput').value, 10);
+  if (!isNaN(v)) {
+    const isSpd = mode === MODE.SPD;
+    customValue = isSpd ? Math.max(10, Math.min(300, v)) : Math.max(50, Math.min(10000, v));
+    updateCfgLabel();
+    renderUI();
+  }
+  closeCfgModal();
+});
+
+armBtn.addEventListener('click', onArmBtn);
+manualBtn.addEventListener('click', () => { if (phase === 'ARMED') doLaunch(); });
+saveBtn.addEventListener('click', openVehicleSection);
+
+$('motionPermBtn').addEventListener('click', async () => {
+  await requestMotionPermission();
+  if (motionGranted) motionBanner.style.display = 'none';
+  else alert('Motion sensor access denied. Manual start and GPS detection will still work.');
+});
+
+$('lbBtn').addEventListener('click', () => {
+  renderLeaderboard();
+  showSection('leaderboard');
+});
+
+$('lbBack').addEventListener('click', () => showSection('race'));
+
+$('vehicleBack').addEventListener('click', () => showSection('race'));
+
+$('confirmSaveBtn').addEventListener('click', () => {
+  const make  = selMake.value;
+  const model = selModel.value;
+  const year  = selYear.value;
+
+  if (!make || !model || !year) {
+    alert('Please select make, model, and year.');
+    return;
+  }
+
+  saveRun(make, model, year);
+  showSection('race');
+  saveBtn.style.display = 'none';
+  renderUI();
+  // Brief toast
+  const t = document.createElement('div');
+  t.textContent = '✓ Run saved to leaderboard';
+  Object.assign(t.style, {
+    position:'fixed', bottom:'30px', left:'50%', transform:'translateX(-50%)',
+    background:'#00FF41', color:'#000', padding:'10px 20px', borderRadius:'20px',
+    fontWeight:'bold', fontSize:'14px', zIndex:999, pointerEvents:'none'
+  });
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+});
+
+$('clearBtn').addEventListener('click', () => {
+  if (confirm('Clear all saved runs from the leaderboard?')) {
+    localStorage.removeItem(STORE_KEY);
+    renderLeaderboard();
+  }
+});
+
+// Close modal on overlay click
+$('cfgModal').addEventListener('click', e => {
+  if (e.target === $('cfgModal')) closeCfgModal();
+});
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+function init() {
+  initVehiclePicker();
+  checkIOSMotionBanner();
+
+  // On Android, grant motion immediately (no gate)
+  if (typeof DeviceMotionEvent === 'undefined' ||
+      typeof DeviceMotionEvent.requestPermission !== 'function') {
+    motionGranted = true;
+  }
+
+  // Request GPS
+  if ('geolocation' in navigator) {
+    startGPS();
+  } else {
+    gpsEl.textContent = 'GPS not available in this browser';
+  }
+
+  renderUI();
+}
+
+init();
+
+// ══════════════════════════════════════════════════════════
+//  PWA — service worker via blob (works over HTTPS)
+// ══════════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  const sw = `
+    const CACHE = 'race-timer-v1';
+    self.addEventListener('install', e => {
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(self.clients.claim());
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(
+        caches.match(e.request).then(r => r || fetch(e.request))
+      );
+    });
+  `;
+  try {
+    const blob = new Blob([sw], { type: 'application/javascript' });
+    navigator.serviceWorker.register(URL.createObjectURL(blob))
+      .catch(() => {/* blob SW blocked on file:// — non-fatal */});
+  } catch { /* non-fatal */ }
+}
+</script>
+</body>
+</html>
