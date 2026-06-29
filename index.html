@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Race Timer">
+<meta name="theme-color" content="#000814">
+<title>Race Timer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #000814;
+  --bg2: #0a0f1e;
+  --green: #00ff41;
+  --green2: #00cc33;
+  --gold: #ffd700;
+  --red: #ff4040;
+  --blue: #00b4d8;
+  --glass: rgba(255,255,255,0.05);
+  --glass-border: rgba(0,255,65,0.15);
+  --glass-border2: rgba(0,255,65,0.3);
+  --text: #e0e0e0;
+  --text-dim: rgba(255,255,255,0.5);
+  --shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif}
+
+/* ── Background ── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    linear-gradient(rgba(0,255,65,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,255,65,0.03) 1px,transparent 1px);
+  background-size:60px 60px;
+  animation:bgPulse 8s ease-in-out infinite;
+  pointer-events:none;z-index:0;
+}
+@keyframes bgPulse{0%,100%{opacity:.6}50%{opacity:1}}
+.orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0;animation:orbPulse 6s ease-in-out infinite}
+.orb1{width:400px;height:400px;background:rgba(0,255,65,0.06);top:-100px;left:-100px}
+.orb2{width:300px;height:300px;background:rgba(0,180,216,0.05);bottom:-50px;right:-50px;animation-delay:-3s}
+@keyframes orbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+
+/* ── Layout ── */
+#app{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;overflow:hidden}
+section{flex:1;overflow-y:auto;padding:0 16px 80px;display:none}
+section.active{display:block}
+.nav{position:fixed;bottom:0;left:0;right:0;height:64px;background:rgba(0,8,20,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--glass-border);display:flex;z-index:100}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:var(--text-dim);font-size:10px;font-family:'Inter',sans-serif;font-weight:500;letter-spacing:.5px;text-transform:uppercase;transition:.2s;border:none;background:none}
+.nav-btn.active{color:var(--green)}
+.nav-btn svg{width:22px;height:22px;transition:.2s}
+.nav-btn.active svg{filter:drop-shadow(0 0 6px var(--green))}
+
+/* ── Cards / Glass ── */
+.card{background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--glass-border);border-radius:16px;padding:20px;margin-bottom:16px;transition:.3s ease;box-shadow:var(--shadow)}
+.card-3d:hover{transform:translateY(-3px) rotateX(2deg);border-color:var(--glass-border2);box-shadow:0 16px 40px rgba(0,0,0,.8),0 0 20px rgba(0,255,65,.08)}
+.card-glow{border-color:rgba(0,255,65,.4);box-shadow:0 0 30px rgba(0,255,65,.1)}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 28px;border-radius:12px;border:none;cursor:pointer;font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;transition:.2s;position:relative;overflow:hidden}
+.btn::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.1),transparent);pointer-events:none}
+.btn-green{background:linear-gradient(135deg,#00ff41,#00cc33);color:#000;box-shadow:0 4px 20px rgba(0,255,65,.4)}
+.btn-green:hover{box-shadow:0 6px 30px rgba(0,255,65,.6);transform:translateY(-1px)}
+.btn-green:disabled{background:#1a2a1a;color:#3a4a3a;box-shadow:none;cursor:not-allowed;transform:none}
+.btn-outline{background:transparent;color:var(--green);border:1px solid var(--green);box-shadow:inset 0 0 20px rgba(0,255,65,.05)}
+.btn-outline:hover{background:rgba(0,255,65,.1);box-shadow:0 0 20px rgba(0,255,65,.2)}
+.btn-red{background:linear-gradient(135deg,#ff4040,#cc0000);color:#fff;box-shadow:0 4px 20px rgba(255,64,64,.4)}
+.btn-gold{background:linear-gradient(135deg,#ffd700,#ffaa00);color:#000;box-shadow:0 4px 20px rgba(255,215,0,.4)}
+.btn-sm{padding:8px 16px;font-size:11px;border-radius:8px}
+.btn-block{width:100%}
+
+/* ── Inputs ── */
+.input-group{margin-bottom:14px}
+.input-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;display:block}
+input,select,textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 16px;color:var(--text);font-family:'Inter',sans-serif;font-size:15px;outline:none;transition:.2s;-webkit-appearance:none;appearance:none}
+input:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,255,65,.1)}
+select option{background:#0a0f1e;color:#e0e0e0}
+
+/* ── Headings ── */
+.page-title{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:700;color:var(--green);letter-spacing:2px;text-transform:uppercase;padding:20px 0 4px;text-shadow:0 0 20px rgba(0,255,65,.4)}
+.section-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
+
+/* ── Auth section ── */
+#auth{align-items:center;justify-content:center;padding:20px;background:var(--bg)}
+#auth.active{display:flex!important}
+.auth-box{width:100%;max-width:400px}
+.auth-logo{text-align:center;margin-bottom:32px}
+.auth-logo .logo-text{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;color:var(--green);text-shadow:0 0 30px rgba(0,255,65,.6);letter-spacing:3px}
+.auth-logo .logo-sub{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-top:4px}
+.auth-tabs{display:flex;margin-bottom:20px;background:rgba(255,255,255,.03);border-radius:10px;padding:4px}
+.auth-tab{flex:1;padding:10px;text-align:center;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-dim);transition:.2s}
+.auth-tab.active{background:rgba(0,255,65,.15);color:var(--green)}
+.auth-error{color:var(--red);font-size:13px;margin-top:8px;text-align:center;min-height:20px}
+
+/* ── Race section ── */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.mode-card{padding:14px;border-radius:12px;border:1px solid var(--glass-border);background:var(--glass);cursor:pointer;text-align:center;transition:.2s;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--text-dim)}
+.mode-card.selected{border-color:var(--green);color:var(--green);background:rgba(0,255,65,.08);box-shadow:0 0 20px rgba(0,255,65,.15)}
+.mode-card .mode-val{font-size:22px;display:block;margin-bottom:4px}
+.timer-box{text-align:center;padding:30px 0}
+.timer-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px}
+.timer-display{font-family:'Orbitron',sans-serif;font-size:clamp(48px,14vw,80px);font-weight:900;color:var(--green);text-shadow:0 0 40px rgba(0,255,65,.5),0 0 80px rgba(0,255,65,.2);line-height:1;animation:timerPulse 2s ease-in-out infinite}
+.timer-display.running{animation:timerFlash .5s ease-in-out infinite}
+@keyframes timerPulse{0%,100%{text-shadow:0 0 30px rgba(0,255,65,.4),0 0 60px rgba(0,255,65,.15)}50%{text-shadow:0 0 50px rgba(0,255,65,.7),0 0 100px rgba(0,255,65,.3)}}
+@keyframes timerFlash{0%,100%{opacity:1}50%{opacity:.8}}
+.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat-box{text-align:center;padding:14px;border-radius:12px;background:var(--glass);border:1px solid var(--glass-border)}
+.stat-val{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;color:var(--gold)}
+.stat-key{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-top:4px}
+.gps-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);font-size:12px;color:var(--text-dim);margin-bottom:12px}
+.gps-dot{width:8px;height:8px;border-radius:50%;background:#555;flex-shrink:0;transition:.3s}
+.gps-dot.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
+.gps-dot.warn{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+.action-btns{display:flex;gap:10px;margin-bottom:12px}
+.motion-btn{background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.3);color:var(--blue);border-radius:10px;padding:10px 14px;font-size:12px;cursor:pointer;display:none;font-family:'Inter',sans-serif}
+
+/* ── Vehicle section ── */
+#vehicle{background:var(--bg)}
+#vehicle.active{display:block}
+.brand-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.brand-logo{width:56px;height:56px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.brand-logo img{width:40px;height:40px;object-fit:contain;filter:brightness(1.2)}
+.brand-badge{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--green),var(--green2));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:#000}
+.brand-name{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:var(--green)}
+.brand-sub{font-size:12px;color:var(--text-dim);margin-top:2px}
+.saved-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.chip{padding:6px 12px;border-radius:20px;background:rgba(0,255,65,.08);border:1px solid rgba(0,255,65,.2);color:var(--green);font-size:12px;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:6px}
+.chip:hover{background:rgba(0,255,65,.15);border-color:rgba(0,255,65,.4)}
+.chip-remove{color:var(--text-dim);font-size:10px;line-height:1;padding:0 2px}
+.chip-remove:hover{color:var(--red)}
+
+/* ── Leaderboard section ── */
+.lb-tabs{display:flex;margin-bottom:16px;background:rgba(255,255,255,.03);border-radius:10px;padding:4px}
+.lb-tab{flex:1;padding:10px;text-align:center;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text-dim);transition:.2s}
+.lb-tab.active{background:rgba(0,255,65,.15);color:var(--green)}
+.lb-mode-section{margin-bottom:24px}
+.lb-mode-title{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.lb-mode-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(255,215,0,.3),transparent)}
+.lb-row{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:var(--glass);border:1px solid var(--glass-border);margin-bottom:8px}
+.lb-rank{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:900;width:28px;text-align:center;flex-shrink:0}
+.lb-info{flex:1;min-width:0}
+.lb-driver{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-vehicle{font-size:11px;color:var(--text-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-time{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:700;color:var(--green);flex-shrink:0}
+.lb-logo-sm{width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.lb-logo-sm img{width:20px;height:20px;object-fit:contain}
+.lb-logo-sm .mini-badge{width:20px;height:20px;border-radius:4px;background:linear-gradient(135deg,var(--green),var(--green2));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:8px;font-weight:900;color:#000}
+.lb-empty{text-align:center;padding:40px 20px;color:var(--text-dim);font-size:14px}
+
+/* ── Profile section ── */
+.profile-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green2));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;color:#000;margin:0 auto 12px;box-shadow:0 0 30px rgba(0,255,65,.4)}
+.profile-name{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:700;color:var(--green);text-align:center;text-shadow:0 0 20px rgba(0,255,65,.4)}
+.profile-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:16px 0}
+.pstat{text-align:center;padding:12px;border-radius:10px;background:var(--glass);border:1px solid var(--glass-border)}
+.pstat-val{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:700;color:var(--gold)}
+.pstat-key{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-top:4px}
+.saved-vehicle-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:var(--glass);border:1px solid var(--glass-border);margin-bottom:8px}
+.svi-logo{width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.svi-logo img{width:26px;height:26px;object-fit:contain}
+.svi-info{flex:1;min-width:0}
+.svi-make{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.svi-detail{font-size:11px;color:var(--text-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.svi-remove{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:18px;padding:4px;line-height:1}
+.svi-remove:hover{color:var(--red)}
+
+/* ── Toast ── */
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:rgba(0,255,65,.9);color:#000;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;z-index:999;transition:.3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 20px rgba(0,255,65,.5)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.error{background:rgba(255,64,64,.9);color:#fff;box-shadow:0 4px 20px rgba(255,64,64,.5)}
+
+/* ── Misc ── */
+.divider{height:1px;background:linear-gradient(to right,transparent,var(--glass-border),transparent);margin:16px 0}
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:16px 0 8px}
+.top-bar .greeting{font-size:12px;color:var(--text-dim);letter-spacing:1px}
+.top-bar .username{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:700;color:var(--green)}
+.custom-dist-row{display:none}
+.split-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);color:var(--gold);font-size:12px;margin-top:8px}
+.result-card{padding:24px;border-radius:16px;background:linear-gradient(135deg,rgba(0,255,65,.08),rgba(0,204,51,.04));border:1px solid rgba(0,255,65,.3);text-align:center;margin-bottom:16px}
+.result-time{font-family:'Orbitron',sans-serif;font-size:clamp(36px,12vw,64px);font-weight:900;color:var(--green);text-shadow:0 0 40px rgba(0,255,65,.6)}
+.result-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<div id="app">
+
+<!-- ═══════════════ AUTH ═══════════════ -->
+<section id="auth" class="active">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="logo-text">⚡ RACE TIMER</div>
+      <div class="logo-sub">Track every millisecond</div>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="authTab('login')">Login</div>
+      <div class="auth-tab" onclick="authTab('register')">Register</div>
+    </div>
+    <div id="login-form">
+      <div class="input-group">
+        <label class="input-label">Username</label>
+        <input type="text" id="login-user" placeholder="Enter username" autocomplete="username" autocapitalize="none">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Password</label>
+        <input type="password" id="login-pass" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn btn-green btn-block" onclick="doLogin()">LOGIN</button>
+    </div>
+    <div id="register-form" style="display:none">
+      <div class="input-group">
+        <label class="input-label">Username</label>
+        <input type="text" id="reg-user" placeholder="Choose a username" autocomplete="username" autocapitalize="none">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Password</label>
+        <input type="password" id="reg-pass" placeholder="Choose a password" autocomplete="new-password">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Confirm Password</label>
+        <input type="password" id="reg-pass2" placeholder="Confirm password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
+      </div>
+      <button class="btn btn-green btn-block" onclick="doRegister()">CREATE ACCOUNT</button>
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</section>
+
+<!-- ═══════════════ RACE ═══════════════ -->
+<section id="race">
+  <div class="top-bar">
+    <div>
+      <div class="greeting">Welcome back</div>
+      <div class="username" id="race-username"></div>
+    </div>
+    <button class="motion-btn" id="motion-btn" onclick="requestMotion()">Enable Motion</button>
+  </div>
+
+  <div class="mode-grid">
+    <div class="mode-card selected" data-mode="0100" onclick="selectMode('0100')">
+      <span class="mode-val">0→100</span>km/h
+    </div>
+    <div class="mode-card" data-mode="400m" onclick="selectMode('400m')">
+      <span class="mode-val">400m</span>Quarter Mile
+    </div>
+    <div class="mode-card" data-mode="custom_dist" onclick="selectMode('custom_dist')">
+      <span class="mode-val">📏</span>Custom Dist
+    </div>
+    <div class="mode-card" data-mode="custom_speed" onclick="selectMode('custom_speed')">
+      <span class="mode-val">🎯</span>Custom Speed
+    </div>
+  </div>
+
+  <div class="custom-dist-row" id="custom-dist-row">
+    <div class="card" style="padding:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="number" id="custom-val" value="200" min="10" max="10000" style="flex:1" placeholder="Value">
+        <select id="custom-unit" style="flex:1">
+          <option value="m">metres</option>
+          <option value="km">kilometres</option>
+          <option value="km/h">km/h target</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="gps-bar">
+    <div class="gps-dot" id="gps-dot"></div>
+    <span id="gps-status">GPS: acquiring…</span>
+    <span style="margin-left:auto;font-family:'Orbitron',sans-serif;font-size:11px;color:var(--green)" id="gps-acc"></span>
+  </div>
+
+  <!-- Idle -->
+  <div id="state-idle">
+    <div class="timer-box">
+      <div class="timer-label">READY TO RACE</div>
+      <div class="timer-display">0.000</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-val" id="idle-speed">0.0</div><div class="stat-key">km/h</div></div>
+      <div class="stat-box"><div class="stat-val" id="idle-dist">0.0</div><div class="stat-key">metres</div></div>
+    </div>
+    <div class="action-btns">
+      <button class="btn btn-green" style="flex:1" id="arm-btn" onclick="armRace()">ARM</button>
+      <button class="btn btn-outline btn-sm" onclick="showLeaderboard()">🏆</button>
+    </div>
+  </div>
+
+  <!-- Armed -->
+  <div id="state-armed" style="display:none">
+    <div class="timer-box">
+      <div class="timer-label">ARMED — LAUNCH!</div>
+      <div class="timer-display" style="color:var(--gold);text-shadow:0 0 40px rgba(255,215,0,.6)">READY</div>
+    </div>
+    <p style="text-align:center;font-size:13px;color:var(--text-dim);margin-bottom:16px">Accelerate hard to start automatically, or tap below</p>
+    <div class="action-btns">
+      <button class="btn btn-gold" style="flex:1" onclick="manualStart()">TAP TO START</button>
+      <button class="btn btn-outline btn-sm" onclick="disarm()">CANCEL</button>
+    </div>
+  </div>
+
+  <!-- Running -->
+  <div id="state-running" style="display:none">
+    <div class="timer-box">
+      <div class="timer-label">IN PROGRESS</div>
+      <div class="timer-display running" id="run-timer">0.000</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-val" id="run-speed">0.0</div><div class="stat-key">km/h</div></div>
+      <div class="stat-box"><div class="stat-val" id="run-dist">0.0</div><div class="stat-key">metres</div></div>
+    </div>
+    <button class="btn btn-red btn-block" onclick="abortRun()">ABORT</button>
+  </div>
+
+  <!-- Finished -->
+  <div id="state-finished" style="display:none">
+    <div class="result-card card-3d">
+      <div class="result-label" id="result-label">0-100 km/h</div>
+      <div class="result-time" id="result-time">0.000</div>
+      <div id="result-split" style="margin-top:8px"></div>
+      <div style="display:flex;gap:16px;justify-content:center;margin-top:12px">
+        <div><div style="font-family:'Orbitron',sans-serif;font-size:18px;color:var(--gold)" id="result-speed">0</div><div style="font-size:10px;color:var(--text-dim);letter-spacing:1px">TOP km/h</div></div>
+        <div><div style="font-family:'Orbitron',sans-serif;font-size:18px;color:var(--blue)" id="result-dist">0</div><div style="font-size:10px;color:var(--text-dim);letter-spacing:1px">METRES</div></div>
+      </div>
+    </div>
+    <div class="action-btns">
+      <button class="btn btn-green" style="flex:1" onclick="goSaveRun()">💾 SAVE RUN</button>
+      <button class="btn btn-outline" onclick="resetRace()">RETRY</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ VEHICLE PICKER ═══════════════ -->
+<section id="vehicle">
+  <div class="page-title">Save Run</div>
+  <div class="brand-header" id="brand-header">
+    <div class="brand-logo" id="brand-logo-box">
+      <div class="brand-badge" id="brand-badge">?</div>
+    </div>
+    <div>
+      <div class="brand-name" id="brand-name-display">Select a vehicle</div>
+      <div class="brand-sub" id="brand-sub-display">Pick your make below</div>
+    </div>
+  </div>
+
+  <!-- Saved chips -->
+  <div id="saved-chips-section" style="display:none">
+    <div class="section-label">Your vehicles</div>
+    <div class="saved-chips" id="saved-chips"></div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="card">
+    <div class="input-group">
+      <label class="input-label">Make</label>
+      <select id="v-make" onchange="onMakeChange()">
+        <option value="">Select make</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Model</label>
+      <select id="v-model" onchange="onModelChange()">
+        <option value="">Select make first</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Year</label>
+      <select id="v-year">
+        <option value="">Select year</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Variant / Spec <span style="color:var(--text-dim);font-size:10px;text-transform:none;letter-spacing:0">(e.g. 2.8 4x4 Legend)</span></label>
+      <input type="text" id="v-variant" placeholder="Optional — e.g. 2.8 4x4 Legend" autocapitalize="words">
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px">
+    <button class="btn btn-green" style="flex:1" onclick="confirmSaveRun()">SAVE RUN</button>
+    <button class="btn btn-outline" onclick="showSection('race')">CANCEL</button>
+  </div>
+</section>
+
+<!-- ═══════════════ LEADERBOARD ═══════════════ -->
+<section id="leaderboard">
+  <div class="page-title">Leaderboard</div>
+  <div class="lb-tabs">
+    <div class="lb-tab active" onclick="lbTab('all')">All Drivers</div>
+    <div class="lb-tab" onclick="lbTab('mine')">My Runs</div>
+  </div>
+  <div id="lb-content"></div>
+  <div id="lb-admin-bar" style="display:none;margin-top:8px">
+    <button class="btn btn-red btn-block btn-sm" onclick="clearLeaderboard()">🗑 CLEAR ALL RUNS (ADMIN)</button>
+  </div>
+</section>
+
+<!-- ═══════════════ PROFILE ═══════════════ -->
+<section id="profile">
+  <div class="page-title">Profile</div>
+  <div class="card card-3d" style="text-align:center;padding:28px">
+    <div class="profile-avatar" id="profile-avatar"></div>
+    <div class="profile-name" id="profile-name"></div>
+    <div id="profile-admin-badge" style="display:none;margin-top:6px"><span style="background:rgba(255,64,64,.15);border:1px solid rgba(255,64,64,.4);color:var(--red);padding:3px 10px;border-radius:20px;font-size:11px;letter-spacing:1px">ADMIN</span></div>
+    <div class="profile-stats" id="profile-stats"></div>
+  </div>
+
+  <div class="section-label">Saved Vehicles</div>
+  <div id="profile-vehicles"></div>
+
+  <div style="margin-top:16px">
+    <button class="btn btn-outline btn-block" onclick="doLogout()">LOGOUT</button>
+  </div>
+</section>
+
+<!-- NAV -->
+<nav class="nav" id="main-nav" style="display:none">
+  <button class="nav-btn active" id="nav-race" onclick="showSection('race')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Timer
+  </button>
+  <button class="nav-btn" id="nav-leaderboard" onclick="showSection('leaderboard')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 20 18 10"/><polyline points="12 20 12 4"/><polyline points="6 20 6 14"/></svg>
+    Leaders
+  </button>
+  <button class="nav-btn" id="nav-profile" onclick="showSection('profile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    Profile
+  </button>
+</nav>
+
+</div><!-- #app -->
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+
+const SA_VEHICLES = {
+  "Toyota":["Hilux","Land Cruiser","Fortuner","Prado","RAV4","Corolla","Camry","Yaris","C-HR","Avanza","Rush","Rumion","HiAce","Quantum","Dyna"],
+  "Volkswagen":["Amarok","Tiguan","T-Cross","Polo","Golf","Touareg","T-Roc","Caddy","Crafter","Passat","Phaeton"],
+  "Ford":["Ranger","Everest","Puma","EcoSport","Territory","Mustang","Kuga","Focus","Fiesta","Transit","Maverick"],
+  "Nissan":["Navara","Patrol","X-Trail","Qashqai","Juke","Micra","Almera","NP300","Urvan","Terra"],
+  "BMW":["1 Series","2 Series","3 Series","4 Series","5 Series","7 Series","X1","X2","X3","X4","X5","X6","X7","M2","M3","M4","M5","Z4"],
+  "Mercedes-Benz":["A-Class","B-Class","C-Class","E-Class","S-Class","GLA","GLB","GLC","GLE","GLS","G-Class","AMG GT","CLA","CLS","V-Class","Sprinter"],
+  "Audi":["A1","A3","A4","A5","A6","A7","A8","Q2","Q3","Q5","Q7","Q8","TT","R8","RS3","RS5","RS6","RS7","e-tron"],
+  "Mitsubishi":["Pajero","Pajero Sport","Eclipse Cross","Outlander","ASX","Triton","Colt","RVR","Mirage"],
+  "Isuzu":["D-Max","MU-X","NLR","NMR","FSR","FTR","FVR","NQR"],
+  "Mazda":["CX-3","CX-30","CX-5","CX-60","CX-9","Mazda2","Mazda3","Mazda6","BT-50","MX-5"],
+  "Honda":["Jazz","Fit","City","Civic","Accord","CR-V","HR-V","BR-V","Pilot","Ridgeline","Ballade","Amaze"],
+  "Hyundai":["i20","i30","Accent","Elantra","Sonata","Venue","Creta","Tucson","Santa Fe","Staria","H-1","H100","Grand i10"],
+  "Kia":["Picanto","Rio","Pegas","Cerato","K5","Seltos","Sportage","Sorento","Telluride","Carnival","Stinger","EV6"],
+  "Suzuki":["Swift","Baleno","Ciaz","Dzire","S-Presso","Ignis","Vitara","Brezza","Jimny","Ertiga","XL6","Celerio","Alto"],
+  "Renault":["Kwid","Triber","Kiger","Duster","Captur","Clio","Megane","Kadjar","Koleos","Alaskan","Zoe","Master","Trafic"],
+  "Peugeot":["108","208","308","508","2008","3008","5008","Partner","Expert","Boxer","Landtrek"],
+  "Citroën":["C3","C4","C5 Aircross","Berlingo","SpaceTourer","Jumpy","Jumper"],
+  "Opel":["Corsa","Astra","Mokka","Grandland","Insignia","Combo","Vivaro","Movano"],
+  "Chevrolet":["Spark","Sonic","Aveo","Cruze","Malibu","Trax","Captiva","Equinox","Traverse","Colorado","Silverado","Camaro","Corvette"],
+  "Volvo":["XC40","XC60","XC90","V40","V60","V90","S60","S90","C40"],
+  "Land Rover":["Defender","Discovery","Discovery Sport","Range Rover","Range Rover Sport","Range Rover Evoque","Range Rover Velar","Freelander"],
+  "Jeep":["Renegade","Compass","Cherokee","Grand Cherokee","Wrangler","Gladiator","Avenger"],
+  "Dodge":["Challenger","Charger","Durango","Ram 1500","Journey","Viper"],
+  "Porsche":["911","Cayman","Boxster","Cayenne","Macan","Panamera","Taycan"],
+  "Lamborghini":["Huracán","Urus","Revuelto"],
+  "Ferrari":["Roma","Portofino","SF90","488","F8","812","296","GTC4"],
+  "Maserati":["Ghibli","Levante","Quattroporte","Grecale","GranTurismo"],
+  "Alfa Romeo":["Giulia","Stelvio","Tonale","156","159"],
+  "Fiat":["Figo","Uno","Panda","500","500X","500L","Tipo","Doblo","Ducato","Strada"],
+  "GWM":["P-Series","Cannon","Steed","Haval H1","Haval H2","Haval H6","Haval Jolion","Haval H9","ORA Good Cat","Tank 300"],
+  "Chery":["Tiggo 4","Tiggo 4 Pro","Tiggo 7","Tiggo 7 Pro","Tiggo 8","Tiggo 8 Pro","Arrizo 5","Arrizo 6"],
+  "Mahindra":["Pik Up","XUV300","XUV500","XUV700","Scorpio","Bolero","TUV300","Thar"],
+  "BAIC":["X25","X35","X55","BJ40","BJ80","D20"],
+  "JAC":["X200","S3","T8","T9","X4","iEV"],
+  "Haval":["H1","H2","H6","Jolion","F7","H9","H7"],
+  "Lexus":["UX","NX","RX","GX","LX","IS","ES","GS","LS","LC","RC"],
+  "Infiniti":["Q30","Q50","Q60","Q70","QX30","QX50","QX60","QX80"],
+  "Cadillac":["CT4","CT5","XT4","XT5","XT6","Escalade"],
+  "Bentley":["Continental","Bentayga","Flying Spur","Mulsanne"],
+  "Rolls-Royce":["Ghost","Phantom","Wraith","Dawn","Cullinan","Spectre"],
+};
+
+const YEARS = Array.from({length:37},(_,i)=>2026-i);
+
+const BRAND_DOMAINS = {
+  "Toyota":"toyota.com","Volkswagen":"vw.com","Ford":"ford.com","Nissan":"nissan.com",
+  "BMW":"bmw.com","Mercedes-Benz":"mercedes-benz.com","Audi":"audi.com","Mitsubishi":"mitsubishi-motors.com",
+  "Isuzu":"isuzu.com","Mazda":"mazda.com","Honda":"honda.com","Hyundai":"hyundai.com",
+  "Kia":"kia.com","Suzuki":"suzuki.com","Renault":"renault.com","Peugeot":"peugeot.com",
+  "Citroën":"citroen.com","Opel":"opel.com","Chevrolet":"chevrolet.com","Volvo":"volvocars.com",
+  "Land Rover":"landrover.com","Jeep":"jeep.com","Dodge":"dodge.com","Porsche":"porsche.com",
+  "Lamborghini":"lamborghini.com","Ferrari":"ferrari.com","Maserati":"maserati.com",
+  "Alfa Romeo":"alfaromeo.com","Fiat":"fiat.com","GWM":"gwm.co.za","Chery":"chery.com",
+  "Mahindra":"mahindra.com","Lexus":"lexus.com","Infiniti":"infiniti.com",
+  "Cadillac":"cadillac.com","Bentley":"bentley.com","Rolls-Royce":"rolls-roycemotorcars.com",
+  "Haval":"haval.co.za","BAIC":"baic.co.za","JAC":"jac.co.za",
+};
+
+// ═══════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════
+
+function getUsers(){return JSON.parse(localStorage.getItem('rt_users')||'[]')}
+function saveUsers(u){localStorage.setItem('rt_users',JSON.stringify(u))}
+function getRuns(){return JSON.parse(localStorage.getItem('rt_runs')||'[]')}
+function saveRuns(r){localStorage.setItem('rt_runs',JSON.stringify(r))}
+function getSession(){return localStorage.getItem('rt_session')||null}
+function setSession(id){localStorage.setItem('rt_session',id)}
+function clearSession(){localStorage.removeItem('rt_session')}
+
+function currentUser(){
+  const id=getSession();
+  return id?getUsers().find(u=>u.id===id)||null:null;
+}
+
+// Seed admin if not exists
+(function seedAdmin(){
+  const users=getUsers();
+  if(!users.find(u=>u.username==='admin')){
+    users.push({id:'admin',username:'admin',password:'admin',isAdmin:true,savedVehicles:[]});
+    saveUsers(users);
+  }
+})();
+
+// ═══════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════
+
+function authTab(tab){
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',i===(tab==='login'?0:1)));
+  document.getElementById('login-form').style.display=tab==='login'?'':'none';
+  document.getElementById('register-form').style.display=tab==='register'?'':'none';
+  document.getElementById('auth-error').textContent='';
+}
+
+function doLogin(){
+  const u=document.getElementById('login-user').value.trim();
+  const p=document.getElementById('login-pass').value;
+  const users=getUsers();
+  const found=users.find(x=>x.username.toLowerCase()===u.toLowerCase()&&x.password===p);
+  if(!found){document.getElementById('auth-error').textContent='Invalid username or password';return;}
+  setSession(found.id);
+  enterApp();
+}
+
+function doRegister(){
+  const u=document.getElementById('reg-user').value.trim();
+  const p=document.getElementById('reg-pass').value;
+  const p2=document.getElementById('reg-pass2').value;
+  const err=document.getElementById('auth-error');
+  if(!u||u.length<3){err.textContent='Username must be at least 3 characters';return;}
+  if(!p||p.length<4){err.textContent='Password must be at least 4 characters';return;}
+  if(p!==p2){err.textContent='Passwords do not match';return;}
+  const users=getUsers();
+  if(users.find(x=>x.username.toLowerCase()===u.toLowerCase())){err.textContent='Username already taken';return;}
+  const id='u_'+Date.now();
+  users.push({id,username:u,password:p,isAdmin:false,savedVehicles:[]});
+  saveUsers(users);
+  setSession(id);
+  enterApp();
+}
+
+function doLogout(){
+  clearSession();
+  showToast('Logged out');
+  resetRace();
+  document.getElementById('auth-error').textContent='';
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('main-nav').style.display='none';
+  showSection('auth');
+}
+
+function enterApp(){
+  document.getElementById('main-nav').style.display='flex';
+  showSection('race');
+  initGPS();
+  checkMotionBtn();
+}
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+
+const SECTIONS=['auth','race','vehicle','leaderboard','profile'];
+const NAV_BTNS={race:'nav-race',leaderboard:'nav-leaderboard',profile:'nav-profile'};
+
+function showSection(id){
+  SECTIONS.forEach(s=>{
+    const el=document.getElementById(s);
+    if(el)el.classList.toggle('active',s===id);
+  });
+  Object.entries(NAV_BTNS).forEach(([s,btn])=>{
+    const b=document.getElementById(btn);
+    if(b)b.classList.toggle('active',s===id);
+  });
+  if(id==='leaderboard')renderLeaderboard();
+  if(id==='profile')renderProfile();
+  if(id==='vehicle')renderVehicleSection();
+  if(id==='race'){
+    const u=currentUser();
+    if(u)document.getElementById('race-username').textContent=u.username.toUpperCase();
+  }
+}
+
+function showLeaderboard(){showSection('leaderboard')}
+
+// ═══════════════════════════════════════════════
+// RACE STATE
+// ═══════════════════════════════════════════════
+
+let raceState='idle'; // idle|armed|running|finished
+let raceMode='0100';
+let raceStart=0,raceEnd=0,rafId=null;
+let lastGPS=null,gpsSpeed=0,gpsDist=0,gpsMaxSpeed=0;
+let split100Saved=false,split100Time=0;
+let customTargetVal=null,customTargetIsSpeed=false;
+
+function selectMode(mode){
+  raceMode=mode;
+  document.querySelectorAll('.mode-card').forEach(c=>c.classList.toggle('selected',c.dataset.mode===mode));
+  const cdRow=document.getElementById('custom-dist-row');
+  cdRow.style.display=(mode==='custom_dist'||mode==='custom_speed')?'':'none';
+  if(mode==='custom_speed'){
+    document.getElementById('custom-unit').innerHTML='<option value="km/h">km/h target</option>';
+  } else if(mode==='custom_dist'){
+    document.getElementById('custom-unit').innerHTML='<option value="m">metres</option><option value="km">kilometres</option>';
+  }
+  resetRace();
+}
+
+function armRace(){
+  if(raceState!=='idle')return;
+  raceState='armed';
+  split100Saved=false;split100Time=0;gpsDist=0;gpsMaxSpeed=0;lastGPS=null;
+  showState('armed');
+}
+function disarm(){raceState='idle';showState('idle')}
+
+function startRace(){
+  raceState='running';
+  raceStart=performance.now();
+  rafId=requestAnimationFrame(tickTimer);
+  showState('running');
+  setWakeLock(true);
+}
+
+function manualStart(){startRace()}
+
+function abortRun(){
+  cancelAnimationFrame(rafId);
+  raceState='idle';
+  showState('idle');
+  setWakeLock(false);
+}
+
+function finishRace(timeMs){
+  cancelAnimationFrame(rafId);
+  raceEnd=performance.now();
+  raceState='finished';
+  setWakeLock(false);
+  const t=timeMs||(raceEnd-raceStart);
+  displayResult(t);
+  showState('finished');
+}
+
+function resetRace(){
+  cancelAnimationFrame(rafId);
+  raceState='idle';
+  gpsDist=0;gpsSpeed=0;gpsMaxSpeed=0;lastGPS=null;split100Saved=false;
+  document.getElementById('run-timer').textContent='0.000';
+  document.getElementById('idle-speed').textContent='0.0';
+  document.getElementById('idle-dist').textContent='0.0';
+  showState('idle');
+}
+
+function tickTimer(){
+  if(raceState!=='running')return;
+  const t=performance.now()-raceStart;
+  document.getElementById('run-timer').textContent=fmtTime(t);
+  document.getElementById('run-speed').textContent=gpsSpeed.toFixed(1);
+  document.getElementById('run-dist').textContent=gpsDist.toFixed(0);
+  rafId=requestAnimationFrame(tickTimer);
+}
+
+function showState(s){
+  ['idle','armed','running','finished'].forEach(x=>document.getElementById('state-'+x).style.display=x===s?'':'none');
+}
+
+function fmtTime(ms){
+  if(ms<60000)return (ms/1000).toFixed(3)+'s';
+  const m=Math.floor(ms/60000);return m+'m '+(((ms%60000)/1000).toFixed(2))+'s';
+}
+
+function displayResult(t){
+  const modeLabel={'0100':'0-100 km/h','400m':'400m','custom_dist':'Custom Dist','custom_speed':'Custom Speed'};
+  document.getElementById('result-label').textContent=modeLabel[raceMode]||raceMode;
+  document.getElementById('result-time').textContent=fmtTime(t);
+  document.getElementById('result-speed').textContent=gpsMaxSpeed.toFixed(0);
+  document.getElementById('result-dist').textContent=gpsDist.toFixed(0);
+  const sp=document.getElementById('result-split');
+  if(split100Time>0){
+    sp.innerHTML=`<span class="split-badge">🏁 0-100: ${fmtTime(split100Time)}</span>`;
+  } else sp.innerHTML='';
+  window._pendingResult={timeMs:t,topSpeed:gpsMaxSpeed,distance:gpsDist,split100:split100Time,mode:raceMode};
+}
+
+// ═══════════════════════════════════════════════
+// GPS
+// ═══════════════════════════════════════════════
+
+let gpsWatchId=null;
+
+function initGPS(){
+  if(gpsWatchId!==null)return;
+  if(!navigator.geolocation){setGPSStatus('GPS not supported','#555');return;}
+  gpsWatchId=navigator.geolocation.watchPosition(onGPS,onGPSError,{enableHighAccuracy:true,maximumAge:0,timeout:10000});
+}
+
+function onGPS(pos){
+  const c=pos.coords;
+  const spd=c.speed!=null?c.speed*3.6:0;
+  gpsSpeed=spd;
+  if(raceState==='running'&&spd>gpsMaxSpeed)gpsMaxSpeed=spd;
+
+  // Distance accumulation
+  if(lastGPS&&raceState==='running'){
+    const d=haversine(lastGPS.latitude,lastGPS.longitude,c.latitude,c.longitude);
+    gpsDist+=d;
+  }
+  lastGPS={latitude:c.latitude,longitude:c.longitude};
+
+  const acc=c.accuracy?Math.round(c.accuracy)+'m':'';
+  const ok=c.accuracy&&c.accuracy<30;
+  setGPSStatus(ok?`GPS: ${spd.toFixed(1)} km/h`:`GPS: ${c.accuracy?Math.round(c.accuracy)+'m acc':'weak'}`,ok?'ok':'warn',acc);
+
+  document.getElementById('idle-speed').textContent=spd.toFixed(1);
+  document.getElementById('idle-dist').textContent=gpsDist.toFixed(0);
+
+  if(raceState==='running'){
+    // 0-100 finish
+    if(raceMode==='0100'&&spd>=100)finishRace();
+    // 400m finish
+    if(raceMode==='400m'&&gpsDist>=400)finishRace();
+    // custom finish
+    if(raceMode==='custom_dist'||raceMode==='custom_speed'){
+      const val=parseFloat(document.getElementById('custom-val').value)||200;
+      const unit=document.getElementById('custom-unit').value;
+      if(unit==='m'&&gpsDist>=val)finishRace();
+      if(unit==='km'&&gpsDist>=val*1000)finishRace();
+      if(unit==='km/h'&&spd>=val)finishRace();
+    }
+    // split 100
+    if(!split100Saved&&spd>=100){split100Saved=true;split100Time=performance.now()-raceStart;}
+  }
+
+  // Auto-launch on armed
+  if(raceState==='armed'){
+    const ax=window._latestAccel||0;
+    if(spd>3||Math.abs(ax)>2.5)startRace();
+  }
+}
+
+function onGPSError(e){setGPSStatus('GPS error — '+e.message,'#555')}
+
+function setGPSStatus(msg,state,acc=''){
+  document.getElementById('gps-status').textContent=msg;
+  const dot=document.getElementById('gps-dot');
+  dot.className='gps-dot'+(state==='ok'?' ok':state==='warn'?' warn':'');
+  document.getElementById('gps-acc').textContent=acc;
+}
+
+function haversine(la1,lo1,la2,lo2){
+  const R=6371000,dLat=(la2-la1)*Math.PI/180,dLon=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ═══════════════════════════════════════════════
+// ACCELEROMETER
+// ═══════════════════════════════════════════════
+
+let motionGranted=false;
+window._latestAccel=0;
+
+function checkMotionBtn(){
+  const btn=document.getElementById('motion-btn');
+  if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+    btn.style.display='';
+  } else {
+    listenMotion();
+  }
+}
+
+function requestMotion(){
+  DeviceMotionEvent.requestPermission().then(r=>{
+    if(r==='granted'){motionGranted=true;listenMotion();document.getElementById('motion-btn').style.display='none';showToast('Motion sensor enabled');}
+    else showToast('Motion denied — use GPS or tap start','error');
+  }).catch(()=>showToast('Could not enable motion','error'));
+}
+
+function listenMotion(){
+  window.addEventListener('devicemotion',e=>{
+    const a=e.accelerationIncludingGravity;
+    if(a)window._latestAccel=Math.sqrt((a.x||0)**2+(a.y||0)**2+(a.z||0)**2);
+    if(raceState==='armed'&&window._latestAccel>12)startRace();
+  });
+}
+
+// ═══════════════════════════════════════════════
+// WAKE LOCK
+// ═══════════════════════════════════════════════
+
+let wakeLock=null;
+async function setWakeLock(on){
+  try{
+    if(on&&'wakeLock'in navigator){wakeLock=await navigator.wakeLock.request('screen');}
+    else if(wakeLock){await wakeLock.release();wakeLock=null;}
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&raceState==='running')setWakeLock(true)});
+
+// ═══════════════════════════════════════════════
+// VEHICLE PICKER
+// ═══════════════════════════════════════════════
+
+function populateMakes(){
+  const sel=document.getElementById('v-make');
+  sel.innerHTML='<option value="">Select make</option>';
+  Object.keys(SA_VEHICLES).sort().forEach(m=>{
+    const o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o);
+  });
+}
+
+function onMakeChange(){
+  const make=document.getElementById('v-make').value;
+  const modelSel=document.getElementById('v-model');
+  modelSel.innerHTML='<option value="">Select model</option>';
+  if(make&&SA_VEHICLES[make]){
+    SA_VEHICLES[make].forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;modelSel.appendChild(o);});
+    updateBrandHeader(make);
+  } else {
+    updateBrandHeader(null);
+  }
+  populateYears();
+}
+
+function onModelChange(){
+  const make=document.getElementById('v-make').value;
+  if(make)updateBrandHeader(make);
+}
+
+function populateYears(){
+  const sel=document.getElementById('v-year');
+  sel.innerHTML='<option value="">Select year</option>';
+  YEARS.forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;sel.appendChild(o);});
+}
+
+function updateBrandHeader(make){
+  const nameEl=document.getElementById('brand-name-display');
+  const subEl=document.getElementById('brand-sub-display');
+  const logoBox=document.getElementById('brand-logo-box');
+  const badge=document.getElementById('brand-badge');
+
+  if(!make){
+    nameEl.textContent='Select a vehicle';
+    subEl.textContent='Pick your make below';
+    logoBox.innerHTML='<div class="brand-badge" id="brand-badge">?</div>';
+    return;
+  }
+  nameEl.textContent=make;
+  const model=document.getElementById('v-model').value;
+  const year=document.getElementById('v-year').value;
+  subEl.textContent=[model,year].filter(Boolean).join(' · ')||'Select model & year';
+
+  const domain=BRAND_DOMAINS[make];
+  if(domain){
+    const img=new Image();
+    img.onload=()=>{logoBox.innerHTML=`<img src="https://logo.clearbit.com/${domain}" style="width:40px;height:40px;object-fit:contain">`;};
+    img.onerror=()=>{logoBox.innerHTML=`<div class="brand-badge">${make.substring(0,2).toUpperCase()}</div>`;};
+    img.src=`https://logo.clearbit.com/${domain}`;
+  } else {
+    logoBox.innerHTML=`<div class="brand-badge">${make.substring(0,2).toUpperCase()}</div>`;
+  }
+}
+
+function renderVehicleSection(){
+  populateMakes();
+  populateYears();
+  updateBrandHeader(null);
+  document.getElementById('v-variant').value='';
+  renderSavedChips();
+}
+
+function renderSavedChips(){
+  const u=currentUser();
+  const chipsSection=document.getElementById('saved-chips-section');
+  const chipsEl=document.getElementById('saved-chips');
+  if(!u||!u.savedVehicles||u.savedVehicles.length===0){chipsSection.style.display='none';return;}
+  chipsSection.style.display='';
+  chipsEl.innerHTML='';
+  u.savedVehicles.slice(-10).reverse().forEach((v,i)=>{
+    const label=[v.make,v.model,v.year,v.variant].filter(Boolean).join(' ');
+    const chip=document.createElement('div');
+    chip.className='chip';
+    chip.innerHTML=`<span onclick="applyChip(${i})">${label}</span><span class="chip-remove" onclick="removeChip(${i})">✕</span>`;
+    chipsEl.appendChild(chip);
+  });
+}
+
+function applyChip(i){
+  const u=currentUser();
+  const v=u.savedVehicles.slice(-10).reverse()[i];
+  if(!v)return;
+  document.getElementById('v-make').value=v.make;
+  onMakeChange();
+  setTimeout(()=>{
+    document.getElementById('v-model').value=v.model||'';
+    document.getElementById('v-year').value=v.year||'';
+    document.getElementById('v-variant').value=v.variant||'';
+    onModelChange();
+  },50);
+}
+
+function removeChip(i){
+  const users=getUsers();
+  const u=users.find(x=>x.id===currentUser().id);
+  if(!u)return;
+  const svRev=u.savedVehicles.slice(-10).reverse();
+  svRev.splice(i,1);
+  u.savedVehicles=svRev.reverse();
+  saveUsers(users);
+  renderSavedChips();
+}
+
+function goSaveRun(){
+  if(!window._pendingResult)return;
+  showSection('vehicle');
+}
+
+function confirmSaveRun(){
+  const make=document.getElementById('v-make').value;
+  const model=document.getElementById('v-model').value;
+  const year=document.getElementById('v-year').value;
+  const variant=document.getElementById('v-variant').value.trim();
+  if(!make){showToast('Select a make','error');return;}
+  if(!model){showToast('Select a model','error');return;}
+  if(!year){showToast('Select a year','error');return;}
+
+  const u=currentUser();
+  if(!u)return;
+  const res=window._pendingResult;
+
+  // Save run
+  const runs=getRuns();
+  runs.push({
+    id:'r_'+Date.now(),
+    userId:u.id,username:u.username,
+    date:new Date().toISOString(),
+    mode:res.mode,
+    time:fmtTime(res.timeMs),timeMs:res.timeMs,
+    distance:res.distance,topSpeed:res.topSpeed,
+    vehicleMake:make,vehicleModel:model,vehicleYear:year,vehicleVariant:variant,
+    split100:res.split100||0
+  });
+  saveRuns(runs);
+
+  // Save vehicle to user
+  const users=getUsers();
+  const usr=users.find(x=>x.id===u.id);
+  if(usr){
+    if(!usr.savedVehicles)usr.savedVehicles=[];
+    const existing=usr.savedVehicles.findIndex(v=>v.make===make&&v.model===model&&v.year===year&&v.variant===variant);
+    if(existing>=0)usr.savedVehicles.splice(existing,1);
+    usr.savedVehicles.push({make,model,year,variant});
+    if(usr.savedVehicles.length>20)usr.savedVehicles=usr.savedVehicles.slice(-20);
+    saveUsers(users);
+  }
+
+  window._pendingResult=null;
+  showToast('Run saved!');
+  resetRace();
+  showSection('race');
+}
+
+// ═══════════════════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════════════════
+
+let lbCurrentTab='all';
+function lbTab(tab){
+  lbCurrentTab=tab;
+  document.querySelectorAll('.lb-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='all')||(i===1&&tab==='mine')));
+  renderLeaderboard();
+}
+
+function renderLeaderboard(){
+  const u=currentUser();
+  let runs=getRuns();
+  if(lbCurrentTab==='mine')runs=runs.filter(r=>r.userId===u?.id);
+
+  const modes=['0100','400m','custom_dist','custom_speed'];
+  const modeLabels={'0100':'0-100 km/h','400m':'400 Metres','custom_dist':'Custom Distance','custom_speed':'Custom Speed'};
+  const content=document.getElementById('lb-content');
+  let html='';
+
+  for(const mode of modes){
+    const mRuns=runs.filter(r=>r.mode===mode).sort((a,b)=>a.timeMs-b.timeMs);
+    if(mRuns.length===0)continue;
+    html+=`<div class="lb-mode-section"><div class="lb-mode-title">${modeLabels[mode]||mode}</div>`;
+    mRuns.forEach((r,i)=>{
+      const medals=['🥇','🥈','🥉'];
+      const rank=i<3?medals[i]:i+1+'.';
+      const vehicle=[r.vehicleMake,r.vehicleModel,r.vehicleYear,r.vehicleVariant].filter(Boolean).join(' ');
+      const domain=BRAND_DOMAINS[r.vehicleMake];
+      const logoHtml=domain
+        ?`<div class="lb-logo-sm"><img src="https://logo.clearbit.com/${domain}" onerror="this.parentNode.innerHTML='<div class=\\'mini-badge\\'>${(r.vehicleMake||'?').substring(0,2).toUpperCase()}</div>'"></div>`
+        :`<div class="lb-logo-sm"><div class="mini-badge">${(r.vehicleMake||'?').substring(0,2).toUpperCase()}</div></div>`;
+      const isMe=r.userId===u?.id;
+      html+=`<div class="lb-row" style="${isMe?'border-color:rgba(0,255,65,.35);background:rgba(0,255,65,.04)':''}">
+        <div class="lb-rank">${rank}</div>
+        ${logoHtml}
+        <div class="lb-info">
+          <div class="lb-driver">${r.username}${isMe?' <span style="color:var(--green);font-size:10px">(you)</span>':''}</div>
+          <div class="lb-vehicle">${vehicle}</div>
+        </div>
+        <div class="lb-time">${r.time}</div>
+      </div>`;
+    });
+    html+='</div>';
+  }
+
+  if(!html)html='<div class="lb-empty">No runs yet.<br>Complete a race and save it!</div>';
+  content.innerHTML=html;
+
+  const adminBar=document.getElementById('lb-admin-bar');
+  if(u?.isAdmin&&getRuns().length>0)adminBar.style.display='';
+  else adminBar.style.display='none';
+}
+
+function clearLeaderboard(){
+  if(!currentUser()?.isAdmin)return;
+  if(!confirm('Clear ALL runs from all users?'))return;
+  saveRuns([]);
+  showToast('Leaderboard cleared');
+  renderLeaderboard();
+}
+
+// ═══════════════════════════════════════════════
+// PROFILE
+// ═══════════════════════════════════════════════
+
+function renderProfile(){
+  const u=currentUser();
+  if(!u)return;
+  const init=u.username.substring(0,1).toUpperCase();
+  document.getElementById('profile-avatar').textContent=init;
+  document.getElementById('profile-name').textContent=u.username.toUpperCase();
+  document.getElementById('profile-admin-badge').style.display=u.isAdmin?'':'none';
+
+  const runs=getRuns().filter(r=>r.userId===u.id);
+  const topSpeed=runs.reduce((m,r)=>Math.max(m,r.topSpeed||0),0);
+  document.getElementById('profile-stats').innerHTML=`
+    <div class="pstat"><div class="pstat-val">${runs.length}</div><div class="pstat-key">Runs</div></div>
+    <div class="pstat"><div class="pstat-val">${topSpeed>0?topSpeed.toFixed(0)+'<span style="font-size:12px">km/h</span>':'—'}</div><div class="pstat-key">Top Speed</div></div>
+    <div class="pstat"><div class="pstat-val">${(u.savedVehicles||[]).length}</div><div class="pstat-key">Vehicles</div></div>
+  `;
+
+  const vEl=document.getElementById('profile-vehicles');
+  const svs=u.savedVehicles||[];
+  if(svs.length===0){vEl.innerHTML='<div style="color:var(--text-dim);font-size:13px;padding:12px 0">No saved vehicles yet.</div>';return;}
+  let html='';
+  [...svs].reverse().slice(0,10).forEach((v,i)=>{
+    const label=[v.model,v.year,v.variant].filter(Boolean).join(' · ');
+    const domain=BRAND_DOMAINS[v.make];
+    const logoHtml=domain
+      ?`<img src="https://logo.clearbit.com/${domain}" style="width:26px;height:26px;object-fit:contain" onerror="this.style.display='none'">`
+      :`<div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;color:#000;background:linear-gradient(135deg,var(--green),var(--green2));width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center">${v.make.substring(0,2).toUpperCase()}</div>`;
+    html+=`<div class="saved-vehicle-item card-3d">
+      <div class="svi-logo">${logoHtml}</div>
+      <div class="svi-info"><div class="svi-make">${v.make}</div><div class="svi-detail">${label||'—'}</div></div>
+      <button class="svi-remove" onclick="removeProfileVehicle(${i})">×</button>
+    </div>`;
+  });
+  vEl.innerHTML=html;
+}
+
+function removeProfileVehicle(i){
+  const users=getUsers();
+  const u=users.find(x=>x.id===currentUser().id);
+  if(!u)return;
+  [...u.savedVehicles].reverse().splice(i,1);
+  // rebuild correctly
+  const rev=[...u.savedVehicles].reverse();
+  rev.splice(i,1);
+  u.savedVehicles=rev.reverse();
+  saveUsers(users);
+  renderProfile();
+}
+
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+
+let toastTimeout;
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast'+(type?' '+type:'');
+  requestAnimationFrame(()=>{t.classList.add('show')});
+  clearTimeout(toastTimeout);
+  toastTimeout=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+
+(function boot(){
+  // Restore session
+  const u=currentUser();
+  if(u){enterApp();}
+  // PWA service worker
+  if('serviceWorker'in navigator&&location.protocol==='https:'){
+    const sw=`self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>new Response('',{status:503}))))`;
+    const blob=new Blob([sw],{type:'text/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
