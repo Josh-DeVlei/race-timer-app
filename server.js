@@ -18,7 +18,20 @@ function broadcast(payload) {
   wss.clients.forEach(c => { if (c.readyState === 1) c.send(data); });
 }
 
+// Heartbeat — keeps Railway proxy from closing idle WebSocket connections
+const heartbeatInterval = setInterval(() => {
+  wss.clients.forEach(ws => {
+    if (!ws.isAlive) return ws.terminate();
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 25000);
+wss.on('close', () => clearInterval(heartbeatInterval));
+
 wss.on('connection', ws => {
+  ws.isAlive = true;
+  ws.on('pong', () => { ws.isAlive = true; });
+
   onlineCount++;
   broadcast({ type: 'online', count: onlineCount });
   ws.send(JSON.stringify({ type: 'history', messages }));
