@@ -650,7 +650,7 @@ function selectMode(mode){
   raceMode=mode;
   document.querySelectorAll('.mode-card').forEach(c=>c.classList.toggle('selected',c.dataset.mode===mode));
   const cdRow=document.getElementById('custom-dist-row');
-  cdRow.style.display=(mode==='custom_dist'||mode==='custom_speed')?'':'none';
+  cdRow.style.display=(mode==='custom_dist'||mode==='custom_speed')?'block':'none';
   if(mode==='custom_speed'){
     document.getElementById('custom-unit').innerHTML='<option value="km/h">km/h target</option>';
   } else if(mode==='custom_dist'){
