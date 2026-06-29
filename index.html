@@ -973,7 +973,7 @@ function updateBrandHeader(make){
     img.onerror=()=>{logoBox.innerHTML=`<div class="brand-badge">${make.substring(0,2).toUpperCase()}</div>`;};
     img.src=`https://logo.clearbit.com/${domain}`;
   } else {
-    logoBox.innerHTML=`<div class="brand-badge">${make.substring(0,2).toUpperCase()}</div>`;
+    logoBox.innerHTML<`<div class="brand-badge">${make.substring(0,2).toUpperCase()}</div>`;
   }
 }
 
@@ -1001,7 +1001,7 @@ function renderSavedChips(){
     const label=[v.make,v.model,v.year,v.variant].filter(Boolean).join(' ');
     const chip=document.createElement('div');
     chip.className='chip';
-    chip.innerHTML=`<span onclick="applyChip(${i})">${label}</span><span class="chip-remove" onclick="removeChip(${i})">✕</span>`;
+    chip.innerHTML<`<span onclick="applyChip(${i})">${label}</span><span class="chip-remove" onclick="removeChip(${i})">✕</span>`;
     chipsEl.appendChild(chip);
   });
 }
@@ -1289,7 +1289,7 @@ let chatWs=null,chatReady=false;
 function initChat(){
   if(chatWs&&chatWs.readyState<2)return;
   const proto=location.protocol==='https:'?'wss':'ws';
-  const url=proto+'://'+location.host;
+  const url=proto+'://'+location.host+'/ws';
   chatWs=new WebSocket(url);
   const disc=document.getElementById('chat-disconnected');
   disc.style.display='';
