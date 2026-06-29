@@ -621,6 +621,7 @@ let raceStart=0,raceEnd=0,rafId=null;
 let lastGPS=null,gpsSpeed=0,gpsDist=0,gpsMaxSpeed=0;
 let split100Saved=false,split100Time=0;
 let customTargetVal=null,customTargetIsSpeed=false;
+let armTime=0;
 
 function selectMode(mode){
   raceMode=mode;
@@ -638,6 +639,7 @@ function selectMode(mode){
 function armRace(){
   if(raceState!=='idle')return;
   raceState='armed';
+  armTime=Date.now();
   split100Saved=false;split100Time=0;gpsDist=0;gpsMaxSpeed=0;lastGPS=null;
   showState('armed');
 }
@@ -760,10 +762,9 @@ function onGPS(pos){
     if(!split100Saved&&spd>=100){split100Saved=true;split100Time=performance.now()-raceStart;}
   }
 
-  // Auto-launch on armed
-  if(raceState==='armed'){
-    const ax=window._latestAccel||0;
-    if(spd>3||Math.abs(ax)>2.5)startRace();
+  // Auto-launch on armed — GPS fallback only, needs 1s settle time
+  if(raceState==='armed'&&(Date.now()-armTime)>1000){
+    if(spd>8)startRace();
   }
 }
 
@@ -807,9 +808,16 @@ function requestMotion(){
 
 function listenMotion(){
   window.addEventListener('devicemotion',e=>{
-    const a=e.accelerationIncludingGravity;
-    if(a)window._latestAccel=Math.sqrt((a.x||0)**2+(a.y||0)**2+(a.z||0)**2);
-    if(raceState==='armed'&&window._latestAccel>12)startRace();
+    // Track raw magnitude (for legacy reference)
+    const ag=e.accelerationIncludingGravity;
+    if(ag)window._latestAccel=Math.sqrt((ag.x||0)**2+(ag.y||0)**2+(ag.z||0)**2);
+
+    // Launch detection uses linear acceleration (gravity removed) — much more reliable
+    const la=e.acceleration;
+    if(la&&raceState==='armed'&&(Date.now()-armTime)>1000){
+      const mag=Math.sqrt((la.x||0)**2+(la.y||0)**2+(la.z||0)**2);
+      if(mag>3)startRace(); // >3 m/s² (~0.3g) = clear vehicle launch
+    }
   });
 }
 
