@@ -5,7 +5,7 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server, path: '/ws' });
+const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 5 * 1024 * 1024 });
 
 app.use(express.static(path.join(__dirname)));
 
@@ -39,11 +39,12 @@ wss.on('connection', ws => {
   ws.on('message', raw => {
     try {
       const msg = JSON.parse(raw);
-      if (msg.type === 'chat' && msg.text && msg.username) {
+      if (msg.type === 'chat' && msg.username && (msg.text || msg.image)) {
         const entry = {
           id: Date.now(),
           username: msg.username,
-          text: String(msg.text).substring(0, 300),
+          text: String(msg.text || '').substring(0, 300),
+          image: msg.image || null,
           time: new Date().toISOString()
         };
         messages.push(entry);

@@ -203,6 +203,10 @@ select option{background:#0a0f1e;color:#e0e0e0}
 .msg-delete:hover{color:var(--red)}
 .run-delete{display:block;width:100%;margin-top:6px;padding:6px;background:rgba(255,64,64,.08);border:1px solid rgba(255,64,64,.25);color:var(--red);border-radius:6px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;font-family:'Orbitron',sans-serif;transition:.15s}
 .run-delete:hover{background:rgba(255,64,64,.2)}
+.chat-photo-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%;transition:.15s}
+.chat-photo-btn:hover{color:var(--green);background:rgba(0,255,65,.08)}
+.chat-photo-btn:disabled{opacity:.3;cursor:not-allowed}
+.chat-bubble img{max-width:220px;max-height:200px;border-radius:10px;display:block;cursor:zoom-in}
 .chat-top{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px}
 .online-pill{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim)}
 .online-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
@@ -486,6 +490,10 @@ select option{background:#0a0f1e;color:#e0e0e0}
   <div id="chat-disconnected" class="chat-disconnected" style="display:none">Connecting to chat…</div>
   <div class="chat-messages" id="chat-messages"></div>
   <div class="chat-input-bar">
+    <input type="file" id="chat-file-input" accept="image/*" style="display:none" onchange="handlePhotoSelect(this)">
+    <button class="chat-photo-btn" id="chat-photo-btn" onclick="document.getElementById('chat-file-input').click()" disabled>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    </button>
     <input class="chat-input" id="chat-input" type="text" placeholder="Message…" maxlength="300" autocomplete="off" onkeydown="if(event.key==='Enter')sendChat()">
     <button class="chat-send" id="chat-send-btn" onclick="sendChat()" disabled>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -1344,6 +1352,7 @@ function initChat(){
     chatReady=true;
     disc.style.display='none';
     document.getElementById('chat-send-btn').disabled=false;
+    document.getElementById('chat-photo-btn').disabled=false;
     // Keep Railway proxy alive with application-level pings every 20 s
     pingInterval=setInterval(()=>{
       if(chatWs.readyState===1)chatWs.send(JSON.stringify({type:'ping'}));
@@ -1373,6 +1382,7 @@ function initChat(){
     chatReady=false;
     clearInterval(pingInterval);
     document.getElementById('chat-send-btn').disabled=true;
+    document.getElementById('chat-photo-btn').disabled=true;
     disc.style.display='';
     disc.textContent='Disconnected. Reconnecting…';
     setTimeout(initChat,3000);
@@ -1390,13 +1400,40 @@ function renderChatMsg(msg){
   const t=new Date(msg.time);
   const timeStr=t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0');
   const delBtn=u?.isAdmin?`<button class="msg-delete" onclick="deleteMsg(${msg.id})">✕</button>`:'';
-  div.innerHTML=`<div class="chat-bubble">${escHtml(msg.text)}</div><div class="chat-meta">${mine?'':`<b>${escHtml(msg.username)}</b> · `}${timeStr}${delBtn}</div>`;
+  const bubbleContent=msg.image
+    ?`<img src="${msg.image}" loading="lazy" onclick="window.open(this.src,'_blank')">`
+    :escHtml(msg.text);
+  div.innerHTML=`<div class="chat-bubble">${bubbleContent}</div><div class="chat-meta">${mine?'':`<b>${escHtml(msg.username)}</b> · `}${timeStr}${delBtn}</div>`;
   document.getElementById('chat-messages').appendChild(div);
 }
 
 function deleteMsg(id){
   if(!currentUser()?.isAdmin)return;
   if(chatWs&&chatWs.readyState===1)chatWs.send(JSON.stringify({type:'delete_msg',id}));
+}
+
+function handlePhotoSelect(input){
+  const file=input.files[0];
+  input.value='';
+  if(!file||!chatReady)return;
+  const u=currentUser();
+  if(!u)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=800;
+      let w=img.width,h=img.height;
+      if(w>MAX||h>MAX){const s=Math.min(MAX/w,MAX/h);w=Math.round(w*s);h=Math.round(h*s);}
+      const canvas=document.createElement('canvas');
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const dataUrl=canvas.toDataURL('image/jpeg',0.65);
+      chatWs.send(JSON.stringify({type:'chat',username:u.username,text:'',image:dataUrl}));
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 function scrollChat(){
