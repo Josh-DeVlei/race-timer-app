@@ -1399,7 +1399,7 @@ function renderChatMsg(msg){
   div.dataset.msgId=msg.id;
   const t=new Date(msg.time);
   const timeStr=t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0');
-  const delBtn=u?.isAdmin?`<button class="msg-delete" onclick="deleteMsg(${msg.id})">✕</button>`:'';
+  const delBtn=(u?.isAdmin||mine)?`<button class="msg-delete" onclick="deleteMsg(${msg.id})">✕</button>`:'';
   const bubbleContent=msg.image
     ?`<img src="${msg.image}" loading="lazy" onclick="window.open(this.src,'_blank')">`
     :escHtml(msg.text);
