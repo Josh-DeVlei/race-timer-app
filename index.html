@@ -1429,6 +1429,7 @@ function renderChatMsg(msg){
   const div=document.createElement('div');
   div.className='chat-msg '+(mine?'mine':'theirs');
   div.dataset.msgId=msg.id;
+  div.dataset.msgUsername=msg.username;
   const t=new Date(msg.time);
   const timeStr=t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0');
   const delBtn=(u?.isAdmin||mine)?`<button class="msg-delete" onclick="deleteMsg(${msg.id})">✕</button>`:'';
@@ -1440,7 +1441,10 @@ function renderChatMsg(msg){
 }
 
 function deleteMsg(id){
-  if(!currentUser()?.isAdmin)return;
+  const u=currentUser();
+  if(!u)return;
+  const el=document.querySelector(`[data-msg-id="${id}"]`);
+  if(!u.isAdmin&&(!el||el.dataset.msgUsername!==u.username))return;
   if(chatWs&&chatWs.readyState===1)chatWs.send(JSON.stringify({type:'delete_msg',id}));
 }
 
