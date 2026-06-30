@@ -446,6 +446,7 @@ select option{background:#0a0f1e;color:#e0e0e0}
 
   <div style="display:flex;gap:10px">
     <button class="btn btn-green" style="flex:1" id="vehicle-confirm-btn" onclick="confirmVehicle()">SET VEHICLE</button>
+    <button class="btn btn-outline" style="flex:1;display:none" id="vehicle-save-btn" onclick="saveVehicleToFavourites()">SAVE VEHICLE</button>
     <button class="btn btn-outline" onclick="showSection('race')">CANCEL</button>
   </div>
 </section>
@@ -1057,6 +1058,7 @@ function openVehiclePicker(){
   vehiclePickerMode='pre';
   document.getElementById('vehicle-section-title').textContent='Select Vehicle';
   document.getElementById('vehicle-confirm-btn').textContent='SET VEHICLE';
+  document.getElementById('vehicle-save-btn').style.display='';
   showSection('vehicle');
   // Pre-fill after render
   if(currentVehicle){
@@ -1082,8 +1084,38 @@ function goSaveRun(){
     vehiclePickerMode='post';
     document.getElementById('vehicle-section-title').textContent='Save Run';
     document.getElementById('vehicle-confirm-btn').textContent='SAVE RUN';
+    document.getElementById('vehicle-save-btn').style.display='none';
     showSection('vehicle');
   }
+}
+
+function saveVehicleToFavourites(){
+  const make=document.getElementById('v-make').value;
+  const model=document.getElementById('v-model').value;
+  const year=document.getElementById('v-year').value;
+  const variant=document.getElementById('v-variant').value.trim();
+  if(!make){showToast('Select a make','error');return;}
+  if(!model){showToast('Select a model','error');return;}
+  if(!year){showToast('Select a year','error');return;}
+  const v={make,model,year,variant};
+  currentVehicle=v;
+  persistCurrentVehicle();
+  updateVehicleBar();
+  const u=currentUser();
+  if(u){
+    const users=getUsers();
+    const usr=users.find(x=>x.id===u.id);
+    if(usr){
+      if(!usr.savedVehicles)usr.savedVehicles=[];
+      const existing=usr.savedVehicles.findIndex(sv=>sv.make===make&&sv.model===model&&sv.year===year&&sv.variant===variant);
+      if(existing>=0)usr.savedVehicles.splice(existing,1);
+      usr.savedVehicles.push(v);
+      if(usr.savedVehicles.length>20)usr.savedVehicles=usr.savedVehicles.slice(-20);
+      saveUsers(users);
+    }
+  }
+  showSection('race');
+  showToast('Vehicle saved!');
 }
 
 function confirmVehicle(){
