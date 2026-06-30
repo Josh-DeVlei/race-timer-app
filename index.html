@@ -199,6 +199,10 @@ select option{background:#0a0f1e;color:#e0e0e0}
 .chat-input:focus{border-color:var(--green)}
 .chat-send{background:var(--green);border:none;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:#000}
 .chat-send:disabled{background:#1a2a1a;color:#3a4a3a;cursor:not-allowed}
+.msg-delete{background:none;border:none;color:rgba(255,64,64,.4);cursor:pointer;font-size:12px;padding:0 0 0 6px;line-height:1;vertical-align:middle;transition:.15s}
+.msg-delete:hover{color:var(--red)}
+.run-delete{display:block;width:100%;margin-top:6px;padding:6px;background:rgba(255,64,64,.08);border:1px solid rgba(255,64,64,.25);color:var(--red);border-radius:6px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;font-family:'Orbitron',sans-serif;transition:.15s}
+.run-delete:hover{background:rgba(255,64,64,.2)}
 .chat-top{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 8px}
 .online-pill{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim)}
 .online-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
@@ -1226,6 +1230,7 @@ function renderLeaderboard(){
           <div class="lb-detail-item"><div class="lb-detail-val">${dist}</div><div class="lb-detail-key">Distance</div></div>
           <div class="lb-detail-item"><div class="lb-detail-val">${dateStr}</div><div class="lb-detail-key">Date</div></div>
         </div>
+        ${u?.isAdmin?`<button class="run-delete" onclick="event.stopPropagation();deleteRun('${runId}')">DELETE RUN</button>`:''}
       </div>`;
     });
     html+='</div>';
@@ -1244,6 +1249,13 @@ function clearLeaderboard(){
   if(!confirm('Clear ALL runs from all users?'))return;
   saveRuns([]);
   showToast('Leaderboard cleared');
+  renderLeaderboard();
+}
+
+function deleteRun(runId){
+  if(!currentUser()?.isAdmin)return;
+  saveRuns(getRuns().filter(r=>r.id!==runId));
+  showToast('Run deleted');
   renderLeaderboard();
 }
 
@@ -1348,6 +1360,9 @@ function initChat(){
       } else if(data.type==='message'){
         renderChatMsg(data.message);
         scrollChat();
+      } else if(data.type==='msg_deleted'){
+        const el=document.querySelector(`[data-msg-id="${data.id}"]`);
+        if(el)el.remove();
       } else if(data.type==='online'){
         document.getElementById('online-count').textContent=data.count+' online';
       }
@@ -1371,10 +1386,17 @@ function renderChatMsg(msg){
   const mine=u&&msg.username===u.username;
   const div=document.createElement('div');
   div.className='chat-msg '+(mine?'mine':'theirs');
+  div.dataset.msgId=msg.id;
   const t=new Date(msg.time);
   const timeStr=t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0');
-  div.innerHTML=`<div class="chat-bubble">${escHtml(msg.text)}</div><div class="chat-meta">${mine?'':`<b>${escHtml(msg.username)}</b> · `}${timeStr}</div>`;
+  const delBtn=u?.isAdmin?`<button class="msg-delete" onclick="deleteMsg(${msg.id})">✕</button>`:'';
+  div.innerHTML=`<div class="chat-bubble">${escHtml(msg.text)}</div><div class="chat-meta">${mine?'':`<b>${escHtml(msg.username)}</b> · `}${timeStr}${delBtn}</div>`;
   document.getElementById('chat-messages').appendChild(div);
+}
+
+function deleteMsg(id){
+  if(!currentUser()?.isAdmin)return;
+  if(chatWs&&chatWs.readyState===1)chatWs.send(JSON.stringify({type:'delete_msg',id}));
 }
 
 function scrollChat(){

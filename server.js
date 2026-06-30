@@ -49,6 +49,12 @@ wss.on('connection', ws => {
         messages.push(entry);
         if (messages.length > MAX_MSGS) messages.shift();
         broadcast({ type: 'message', message: entry });
+      } else if (msg.type === 'delete_msg' && msg.id) {
+        const idx = messages.findIndex(m => String(m.id) === String(msg.id));
+        if (idx >= 0) {
+          messages.splice(idx, 1);
+          broadcast({ type: 'msg_deleted', id: msg.id });
+        }
       }
     } catch {}
   });
