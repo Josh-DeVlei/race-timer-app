@@ -203,6 +203,13 @@ select option{background:#0a0f1e;color:#e0e0e0}
 .msg-delete:hover{color:var(--red)}
 .run-delete{display:block;width:100%;margin-top:6px;padding:6px;background:rgba(255,64,64,.08);border:1px solid rgba(255,64,64,.25);color:var(--red);border-radius:6px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;font-family:'Orbitron',sans-serif;transition:.15s}
 .run-delete:hover{background:rgba(255,64,64,.2)}
+.member-item{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;background:var(--glass);border:1px solid var(--glass-border);margin-bottom:8px}
+.member-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--green2));display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:17px;font-weight:900;color:#000;flex-shrink:0}
+.member-info{flex:1;min-width:0}
+.member-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.member-sub{font-size:11px;color:var(--text-dim);margin-top:2px}
+.member-delete{background:none;border:1px solid rgba(255,64,64,.35);color:var(--red);border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;font-family:'Orbitron',sans-serif;letter-spacing:.5px;transition:.15s;flex-shrink:0}
+.member-delete:hover{background:rgba(255,64,64,.12)}
 .chat-photo-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%;transition:.15s}
 .chat-photo-btn:hover{color:var(--green);background:rgba(0,255,65,.08)}
 .chat-photo-btn:disabled{opacity:.3;cursor:not-allowed}
@@ -477,9 +484,22 @@ select option{background:#0a0f1e;color:#e0e0e0}
   <div class="section-label">Saved Vehicles</div>
   <div id="profile-vehicles"></div>
 
-  <div style="margin-top:16px">
+  <div id="admin-members-btn" style="display:none;margin-top:8px">
+    <button class="btn btn-outline btn-block" onclick="showSection('members')" style="border-color:rgba(255,64,64,.4);color:var(--red)">MEMBERS (ADMIN)</button>
+  </div>
+  <div style="margin-top:8px">
     <button class="btn btn-outline btn-block" onclick="doLogout()">LOGOUT</button>
   </div>
+</section>
+
+<!-- ═══════════════ MEMBERS (ADMIN) ═══════════════ -->
+<section id="members">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+    <button class="btn btn-outline" style="padding:8px 16px;font-size:12px" onclick="showSection('profile')">← BACK</button>
+    <div class="page-title" style="margin:0;padding:0">Members</div>
+  </div>
+  <div id="members-count" style="color:var(--text-dim);font-size:12px;margin-bottom:16px;padding-top:4px"></div>
+  <div id="members-list"></div>
 </section>
 
 <!-- ═══════════════ CHAT ═══════════════ -->
@@ -676,7 +696,7 @@ function enterApp(){
 // NAVIGATION
 // -----------------------------------------------
 
-const SECTIONS=['auth','race','vehicle','leaderboard','chat','profile'];
+const SECTIONS=['auth','race','vehicle','leaderboard','chat','profile','members'];
 const NAV_BTNS={race:'nav-race',leaderboard:'nav-leaderboard',chat:'nav-chat',profile:'nav-profile'};
 
 function showSection(id){
@@ -690,6 +710,7 @@ function showSection(id){
   });
   if(id==='leaderboard')renderLeaderboard();
   if(id==='profile')renderProfile();
+  if(id==='members')renderMembers();
   if(id==='vehicle')renderVehicleSection();
   if(id==='race'){
     const u=currentUser();
@@ -1292,6 +1313,42 @@ function clearLeaderboard(){
   renderLeaderboard();
 }
 
+function renderMembers(){
+  if(!currentUser()?.isAdmin)return;
+  const users=getUsers();
+  const runs=getRuns();
+  document.getElementById('members-count').textContent=users.length+' member'+(users.length!==1?'s':'');
+  const list=document.getElementById('members-list');
+  list.innerHTML='';
+  users.forEach(u=>{
+    const runCount=runs.filter(r=>r.userId===u.id).length;
+    const init=u.username.substring(0,1).toUpperCase();
+    const div=document.createElement('div');
+    div.className='member-item';
+    div.innerHTML=`
+      <div class="member-avatar">${escHtml(init)}</div>
+      <div class="member-info">
+        <div class="member-name">${escHtml(u.username)}${u.isAdmin?'&nbsp;<span style="color:var(--red);font-size:10px;letter-spacing:.5px">ADMIN</span>':''}</div>
+        <div class="member-sub">${runCount} run${runCount!==1?'s':''}</div>
+      </div>
+      ${u.isAdmin?'':`<button class="member-delete" onclick="deleteAccount('${u.id}')">DELETE</button>`}
+    `;
+    list.appendChild(div);
+  });
+}
+
+function deleteAccount(userId){
+  if(!currentUser()?.isAdmin)return;
+  const users=getUsers();
+  const target=users.find(u=>u.id===userId);
+  if(!target)return;
+  if(!confirm(`Delete account "${target.username}"?\n\nThis will also remove all their saved runs and cannot be undone.`))return;
+  saveUsers(users.filter(u=>u.id!==userId));
+  saveRuns(getRuns().filter(r=>r.userId!==userId));
+  showToast('Account deleted');
+  renderMembers();
+}
+
 function deleteRun(runId){
   if(!currentUser()?.isAdmin)return;
   saveRuns(getRuns().filter(r=>r.id!==runId));
@@ -1310,6 +1367,7 @@ function renderProfile(){
   document.getElementById('profile-avatar').textContent=init;
   document.getElementById('profile-name').textContent=u.username.toUpperCase();
   document.getElementById('profile-admin-badge').style.display=u.isAdmin?'':'none';
+  document.getElementById('admin-members-btn').style.display=u.isAdmin?'':'none';
 
   const runs=getRuns().filter(r=>r.userId===u.id);
   const topSpeed=runs.reduce((m,r)=>Math.max(m,r.topSpeed||0),0);
