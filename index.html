@@ -730,6 +730,8 @@ let raceMode='0100';
 let raceStart=0,raceEnd=0,rafId=null;
 let lastGPS=null,gpsSpeed=0,gpsDist=0,gpsMaxSpeed=0;
 let split100Saved=false,split100Time=0;
+// Dead-reckoning (accel integration between GPS fixes)
+let drSpeed=0,drLastT=null,drAxis=null,drAxisSign=1,drCalibrated=false,drSamples=[];
 let customTargetVal=null,customTargetIsSpeed=false;
 let armTime=0;
 let currentVehicle=null; // {make,model,year,variant}
@@ -766,6 +768,7 @@ function armRace(){
   raceState='armed';
   armTime=Date.now();
   split100Saved=false;split100Time=0;gpsDist=0;gpsMaxSpeed=0;lastGPS=null;
+  drSpeed=0;drLastT=null;drAxis=null;drAxisSign=1;drCalibrated=false;drSamples=[];
   showState('armed');
 }
 function disarm(){raceState='idle';showState('idle')}
@@ -867,6 +870,11 @@ function onGPS(pos){
   const spd=rawSpd<2?0:rawSpd; // suppress GPS drift noise when stationary
   gpsSpeed=spd;
   if(raceState==='running'&&spd>gpsMaxSpeed)gpsMaxSpeed=spd;
+  // Anchor dead-reckoning to GPS speed on every fix
+  if(raceState==='running'){
+    if(!drCalibrated)calibrateDR(spd/3.6);
+    else drSpeed=spd/3.6;
+  }
 
   // Distance accumulation
   let d=0;
@@ -952,17 +960,57 @@ function requestMotion(){
 
 function listenMotion(){
   window.addEventListener('devicemotion',e=>{
-    // Track raw magnitude (for legacy reference)
     const ag=e.accelerationIncludingGravity;
     if(ag)window._latestAccel=Math.sqrt((ag.x||0)**2+(ag.y||0)**2+(ag.z||0)**2);
 
-    // Launch detection uses linear acceleration (gravity removed)
     const la=e.acceleration;
-    if(la&&la.x!=null&&raceState==='armed'){
+    if(!la||la.x==null)return;
+
+    // Launch detection
+    if(raceState==='armed'){
       const mag=Math.sqrt(la.x**2+la.y**2+la.z**2);
       if(mag>2.5)startRace();
     }
+
+    // Dead-reckoning: high-frequency speed integration during run
+    if(raceState==='running'){
+      const now=performance.now();
+      if(!drCalibrated){
+        // Collect samples until first GPS fix calibrates the axis
+        drSamples.push({x:la.x,y:la.y,z:la.z});
+        drLastT=now;
+        return;
+      }
+      const dt=drLastT?(now-drLastT)/1000:0;
+      drLastT=now;
+      if(dt<=0||dt>0.5)return; // skip stale or invalid ticks
+      // Project acceleration onto forward axis (auto-detected at calibration)
+      const fwd=(drAxis==='x'?la.x:drAxis==='y'?la.y:la.z)*drAxisSign;
+      if(Math.abs(fwd)>30)return; // reject noise spikes >3g
+      drSpeed=Math.max(0,drSpeed+fwd*dt);
+      gpsSpeed=drSpeed*3.6; // km/h — tickTimer reads this at 60 Hz
+      if(drSpeed*3.6>gpsMaxSpeed)gpsMaxSpeed=drSpeed*3.6;
+      // High-frequency 0-100 finish (within ~16 ms vs ~500 ms with GPS alone)
+      if(raceMode==='0100'&&drSpeed*3.6>=100)finishRace();
+    }
   });
+}
+
+function calibrateDR(anchorSpeedMs){
+  if(drSamples.length>=3){
+    let sx=0,sy=0,sz=0;
+    drSamples.forEach(s=>{sx+=s.x;sy+=s.y;sz+=s.z;});
+    const ax=Math.abs(sx),ay=Math.abs(sy),az=Math.abs(sz);
+    if(ax>=ay&&ax>=az){drAxis='x';drAxisSign=sx>0?1:-1;}
+    else if(ay>=ax&&ay>=az){drAxis='y';drAxisSign=sy>0?1:-1;}
+    else{drAxis='z';drAxisSign=sz>0?1:-1;}
+  } else {
+    // Not enough samples — pick highest single-sample axis as fallback
+    drAxis='x';drAxisSign=1;
+  }
+  drSpeed=anchorSpeedMs;
+  drCalibrated=true;
+  drSamples=[];
 }
 
 // -----------------------------------------------
