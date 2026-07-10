@@ -762,6 +762,7 @@ function selectMode(mode){
 
 function armRace(){
   if(raceState!=='idle')return;
+  if(gpsSpeed>2){showToast('Must be stationary to arm','error');return;}
   raceState='armed';
   armTime=Date.now();
   split100Saved=false;split100Time=0;gpsDist=0;gpsMaxSpeed=0;lastGPS=null;
@@ -849,6 +850,17 @@ function initGPS(){
   gpsWatchId=navigator.geolocation.watchPosition(onGPS,onGPSError,{enableHighAccuracy:true,maximumAge:0,timeout:10000});
 }
 
+function interpolateFinish(target,intervalDist,prevTs,curTs){
+  // Find the exact elapsed time when the car crossed `target` metres.
+  // Linear interpolation within the GPS interval that straddled the finish line.
+  if(intervalDist<=0)return performance.now()-raceStart;
+  const prevDist=gpsDist-intervalDist;
+  const fraction=(target-prevDist)/intervalDist; // 0..1 — how far into interval the crossing happened
+  const intervalMs=curTs-prevTs;
+  const overshootMs=(1-fraction)*intervalMs; // time spent after the crossing, inside this interval
+  return Math.max(0,performance.now()-raceStart-overshootMs);
+}
+
 function onGPS(pos){
   const c=pos.coords;
   const rawSpd=c.speed!=null?c.speed*3.6:0;
@@ -857,11 +869,13 @@ function onGPS(pos){
   if(raceState==='running'&&spd>gpsMaxSpeed)gpsMaxSpeed=spd;
 
   // Distance accumulation
+  let d=0;
   if(lastGPS&&raceState==='running'){
-    const d=haversine(lastGPS.latitude,lastGPS.longitude,c.latitude,c.longitude);
+    d=haversine(lastGPS.latitude,lastGPS.longitude,c.latitude,c.longitude);
     gpsDist+=d;
   }
-  lastGPS={latitude:c.latitude,longitude:c.longitude};
+  const prevTimestamp=lastGPS?lastGPS.timestamp:pos.timestamp;
+  lastGPS={latitude:c.latitude,longitude:c.longitude,timestamp:pos.timestamp};
 
   const acc=c.accuracy?Math.round(c.accuracy)+'m':'';
   const ok=c.accuracy&&c.accuracy<30;
@@ -873,14 +887,21 @@ function onGPS(pos){
   if(raceState==='running'){
     // 0-100 finish
     if(raceMode==='0100'&&spd>=100)finishRace();
-    // 400m finish
-    if(raceMode==='400m'&&gpsDist>=400)finishRace();
+    // 400m finish — interpolate to find exact crossing time
+    if(raceMode==='400m'&&gpsDist>=400){
+      const elapsed=interpolateFinish(400,d,prevTimestamp,pos.timestamp);
+      finishRace(elapsed);
+    }
     // custom finish
     if(raceMode==='custom_dist'||raceMode==='custom_speed'){
       const val=parseFloat(document.getElementById('custom-val').value)||200;
       const unit=document.getElementById('custom-unit').value;
-      if(unit==='m'&&gpsDist>=val)finishRace();
-      if(unit==='km'&&gpsDist>=val*1000)finishRace();
+      if(unit==='m'&&gpsDist>=val){
+        finishRace(interpolateFinish(val,d,prevTimestamp,pos.timestamp));
+      }
+      if(unit==='km'&&gpsDist>=val*1000){
+        finishRace(interpolateFinish(val*1000,d,prevTimestamp,pos.timestamp));
+      }
       if(unit==='km/h'&&spd>=val)finishRace();
     }
     // split 100
