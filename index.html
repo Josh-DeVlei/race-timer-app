@@ -407,13 +407,18 @@ select option{background:#0a0f1e;color:#e0e0e0}
     <div style="text-align:center;padding:8px 0 0">
       <div id="armed-mode-label" style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:3px;color:var(--gold);text-transform:uppercase"></div>
     </div>
-    <div class="timer-box" style="padding:8px 0">
+    <div class="timer-box" style="padding:12px 0 20px">
       <div class="timer-label">ARMED — LAUNCH!</div>
-      <div class="timer-display" style="color:var(--gold);text-shadow:0 0 40px rgba(255,215,0,.6)">READY</div>
-    </div>
-    <div class="stats-col">
-      <div class="stat-box"><div class="stat-val xlarge" id="armed-speed">0.0</div><div class="stat-key">km/h</div></div>
-      <div class="stat-box"><div class="stat-val xlarge" id="armed-dist">0.0</div><div class="stat-key">metres</div></div>
+      <div style="display:flex;justify-content:center;align-items:flex-end;gap:40px;margin-top:20px">
+        <div style="text-align:center">
+          <div class="stat-val" id="armed-speed" style="font-size:clamp(52px,16vw,88px);color:var(--gold);text-shadow:0 0 40px rgba(255,215,0,.5);line-height:1">0.0</div>
+          <div class="stat-key" style="font-size:13px;margin-top:6px">km/h</div>
+        </div>
+        <div style="text-align:center">
+          <div class="stat-val" id="armed-dist" style="font-size:clamp(52px,16vw,88px);color:var(--gold);text-shadow:0 0 40px rgba(255,215,0,.5);line-height:1">0.0</div>
+          <div class="stat-key" style="font-size:13px;margin-top:6px">metres</div>
+        </div>
+      </div>
     </div>
     <p style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:14px">Accelerate hard to start automatically, or tap below</p>
     <div class="action-btns">
@@ -1171,7 +1176,7 @@ function showLeaderboard(){showSection('leaderboard')}
 // RACE STATE
 // -----------------------------------------------
 
-const APP_VERSION='v1.7';
+const APP_VERSION='v1.8';
 
 let raceState='idle'; // idle|armed|running|finished
 let raceMode='0100';
