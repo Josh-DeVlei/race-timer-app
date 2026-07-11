@@ -1358,7 +1358,7 @@ function renderLeaderboard(){
           <div class="lb-detail-item"><div class="lb-detail-val">${dist}</div><div class="lb-detail-key">Distance</div></div>
           <div class="lb-detail-item"><div class="lb-detail-val">${dateStr}</div><div class="lb-detail-key">Date</div></div>
         </div>
-        ${u?.isAdmin?`<button class="run-delete" onclick="event.stopPropagation();deleteRun('${runId}')">DELETE RUN</button>`:''}
+        ${(u?.isAdmin||r.userId===u?.id)?`<button class="run-delete" onclick="event.stopPropagation();deleteRun('${runId}')">DELETE RUN</button>`:''}
       </div>`;
     });
     html+='</div>';
@@ -1417,8 +1417,13 @@ function deleteAccount(userId){
 }
 
 function deleteRun(runId){
-  if(!currentUser()?.isAdmin)return;
-  saveRuns(getRuns().filter(r=>r.id!==runId));
+  const u=currentUser();
+  if(!u)return;
+  const runs=getRuns();
+  const run=runs.find(r=>r.id===runId);
+  if(!run)return;
+  if(!u.isAdmin&&run.userId!==u.id)return;
+  saveRuns(runs.filter(r=>r.id!==runId));
   showToast('Run deleted');
   renderLeaderboard();
 }
