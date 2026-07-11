@@ -299,7 +299,10 @@ select option{background:#0a0f1e;color:#e0e0e0}
       <div class="greeting">Welcome back</div>
       <div class="username" id="race-username"></div>
     </div>
-    <button class="motion-btn" id="motion-btn" onclick="requestMotion()">Enable Motion</button>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+      <button class="motion-btn" id="motion-btn" onclick="requestMotion()">Enable Motion</button>
+      <span id="version-badge" style="font-family:'Orbitron',sans-serif;font-size:10px;color:var(--text-dim);letter-spacing:1px"></span>
+    </div>
   </div>
 
   <div class="mode-grid">
@@ -685,6 +688,7 @@ function doLogout(){
 
 function enterApp(){
   document.getElementById('main-nav').style.display='flex';
+  document.getElementById('version-badge').textContent=APP_VERSION;
   loadCurrentVehicle();
   showSection('race');
   initGPS();
@@ -724,6 +728,8 @@ function showLeaderboard(){showSection('leaderboard')}
 // -----------------------------------------------
 // RACE STATE
 // -----------------------------------------------
+
+const APP_VERSION='v1.5';
 
 let raceState='idle'; // idle|armed|running|finished
 let raceMode='0100';
