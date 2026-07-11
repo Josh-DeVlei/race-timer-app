@@ -111,6 +111,10 @@ select option{background:#0a0f1e;color:#e0e0e0}
 .stat-box{text-align:center;padding:14px;border-radius:12px;background:var(--glass);border:1px solid var(--glass-border)}
 .stat-val{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;color:var(--gold)}
 .stat-val.large{font-size:clamp(36px,10vw,52px)}
+.stats-col{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.stats-col .stat-box{padding:16px 20px;text-align:left;display:flex;align-items:baseline;gap:14px}
+.stat-val.xlarge{font-size:clamp(64px,22vw,110px);line-height:1}
+.stats-col .stat-key{font-size:14px;letter-spacing:1.5px;margin-top:0}
 .stat-key{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-top:4px}
 .gps-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);font-size:12px;color:var(--text-dim);margin-bottom:12px}
 .gps-dot{width:8px;height:8px;border-radius:50%;background:#555;flex-shrink:0;transition:.3s}
@@ -371,13 +375,13 @@ select option{background:#0a0f1e;color:#e0e0e0}
     <div style="text-align:center;padding:8px 0 0">
       <div id="armed-mode-label" style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:3px;color:var(--gold);text-transform:uppercase"></div>
     </div>
-    <div class="timer-box" style="padding:16px 0">
+    <div class="timer-box" style="padding:8px 0">
       <div class="timer-label">ARMED — LAUNCH!</div>
       <div class="timer-display" style="color:var(--gold);text-shadow:0 0 40px rgba(255,215,0,.6)">READY</div>
     </div>
-    <div class="stats-row" style="margin-bottom:12px">
-      <div class="stat-box"><div class="stat-val large" id="armed-speed">0.0</div><div class="stat-key">km/h</div></div>
-      <div class="stat-box"><div class="stat-val large" id="armed-dist">0.0</div><div class="stat-key">metres</div></div>
+    <div class="stats-col">
+      <div class="stat-box"><div class="stat-val xlarge" id="armed-speed">0.0</div><div class="stat-key">km/h</div></div>
+      <div class="stat-box"><div class="stat-val xlarge" id="armed-dist">0.0</div><div class="stat-key">metres</div></div>
     </div>
     <p style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:14px">Accelerate hard to start automatically, or tap below</p>
     <div class="action-btns">
@@ -388,13 +392,13 @@ select option{background:#0a0f1e;color:#e0e0e0}
 
   <!-- Running -->
   <div id="state-running" style="display:none">
-    <div class="timer-box">
+    <div class="timer-box" style="padding:8px 0">
       <div class="timer-label">IN PROGRESS</div>
       <div class="timer-display running" id="run-timer">0.000</div>
     </div>
-    <div class="stats-row">
-      <div class="stat-box"><div class="stat-val large" id="run-speed">0.0</div><div class="stat-key">km/h</div></div>
-      <div class="stat-box"><div class="stat-val large" id="run-dist">0.0</div><div class="stat-key">metres</div></div>
+    <div class="stats-col">
+      <div class="stat-box"><div class="stat-val xlarge" id="run-speed">0.0</div><div class="stat-key">km/h</div></div>
+      <div class="stat-box"><div class="stat-val xlarge" id="run-dist">0.0</div><div class="stat-key">metres</div></div>
     </div>
     <button class="btn btn-red btn-block" onclick="abortRun()">ABORT</button>
   </div>
