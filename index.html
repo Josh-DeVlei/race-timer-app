@@ -110,6 +110,7 @@ select option{background:#0a0f1e;color:#e0e0e0}
 .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .stat-box{text-align:center;padding:14px;border-radius:12px;background:var(--glass);border:1px solid var(--glass-border)}
 .stat-val{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;color:var(--gold)}
+.stat-val.large{font-size:clamp(36px,10vw,52px)}
 .stat-key{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-top:4px}
 .gps-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);font-size:12px;color:var(--text-dim);margin-bottom:12px}
 .gps-dot{width:8px;height:8px;border-radius:50%;background:#555;flex-shrink:0;transition:.3s}
@@ -367,11 +368,18 @@ select option{background:#0a0f1e;color:#e0e0e0}
 
   <!-- Armed -->
   <div id="state-armed" style="display:none">
-    <div class="timer-box">
+    <div style="text-align:center;padding:8px 0 0">
+      <div id="armed-mode-label" style="font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:3px;color:var(--gold);text-transform:uppercase"></div>
+    </div>
+    <div class="timer-box" style="padding:16px 0">
       <div class="timer-label">ARMED — LAUNCH!</div>
       <div class="timer-display" style="color:var(--gold);text-shadow:0 0 40px rgba(255,215,0,.6)">READY</div>
     </div>
-    <p style="text-align:center;font-size:13px;color:var(--text-dim);margin-bottom:16px">Accelerate hard to start automatically, or tap below</p>
+    <div class="stats-row" style="margin-bottom:12px">
+      <div class="stat-box"><div class="stat-val large" id="armed-speed">0.0</div><div class="stat-key">km/h</div></div>
+      <div class="stat-box"><div class="stat-val large" id="armed-dist">0.0</div><div class="stat-key">metres</div></div>
+    </div>
+    <p style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:14px">Accelerate hard to start automatically, or tap below</p>
     <div class="action-btns">
       <button class="btn btn-gold" style="flex:1" onclick="manualStart()">TAP TO START</button>
       <button class="btn btn-outline btn-sm" onclick="disarm()">CANCEL</button>
@@ -385,8 +393,8 @@ select option{background:#0a0f1e;color:#e0e0e0}
       <div class="timer-display running" id="run-timer">0.000</div>
     </div>
     <div class="stats-row">
-      <div class="stat-box"><div class="stat-val" id="run-speed">0.0</div><div class="stat-key">km/h</div></div>
-      <div class="stat-box"><div class="stat-val" id="run-dist">0.0</div><div class="stat-key">metres</div></div>
+      <div class="stat-box"><div class="stat-val large" id="run-speed">0.0</div><div class="stat-key">km/h</div></div>
+      <div class="stat-box"><div class="stat-val large" id="run-dist">0.0</div><div class="stat-key">metres</div></div>
     </div>
     <button class="btn btn-red btn-block" onclick="abortRun()">ABORT</button>
   </div>
@@ -774,6 +782,8 @@ function armRace(){
   raceState='armed';
   armTime=Date.now();
   split100Saved=false;split100Time=0;gpsDist=0;gpsMaxSpeed=0;lastGPS=null;
+  const modeLabels={'0100':'0 → 100 km/h','400m':'400 Metres','custom_dist':'Custom Distance','custom_speed':'Custom Speed'};
+  document.getElementById('armed-mode-label').textContent=modeLabels[raceMode]||raceMode;
   drSpeed=0;drLastT=null;drAxis=null;drAxisSign=1;drCalibrated=false;drSamples=[];
   showState('armed');
 }
@@ -827,6 +837,11 @@ function tickTimer(){
 
 function showState(s){
   ['idle','armed','running','finished'].forEach(x=>document.getElementById('state-'+x).style.display=x===s?'':'none');
+  const focused=s==='armed'||s==='running';
+  document.querySelector('.top-bar').style.display=focused?'none':'';
+  document.querySelector('.mode-grid').style.display=focused?'none':'';
+  document.getElementById('race-vehicle-bar').style.display=focused?'none':'';
+  document.getElementById('custom-dist-row').style.display=focused?'none':(raceMode==='custom_dist'||raceMode==='custom_speed'?'block':'none');
 }
 
 function fmtTime(ms){
@@ -896,6 +911,8 @@ function onGPS(pos){
 
   document.getElementById('idle-speed').textContent=spd.toFixed(1);
   document.getElementById('idle-dist').textContent=gpsDist.toFixed(0);
+  document.getElementById('armed-speed').textContent=spd.toFixed(1);
+  document.getElementById('armed-dist').textContent=gpsDist.toFixed(0);
 
   if(raceState==='running'){
     // 0-100 finish
