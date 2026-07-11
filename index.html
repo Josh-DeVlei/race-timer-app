@@ -492,9 +492,19 @@ select option{background:#0a0f1e;color:#e0e0e0}
         <option value="">Select year</option>
       </select>
     </div>
+    <div class="input-group" id="v-variant-select-group">
+      <label class="input-label">Variant</label>
+      <select id="v-variant-select" onchange="onVariantChange()">
+        <option value="">Select model first</option>
+      </select>
+    </div>
+    <div class="input-group" id="v-variant-custom-group" style="display:none">
+      <label class="input-label">Custom Variant</label>
+      <input type="text" id="v-variant" placeholder="e.g. 2.8 4x4 Legend" autocapitalize="words">
+    </div>
     <div class="input-group">
-      <label class="input-label">Variant / Spec <span style="color:var(--text-dim);font-size:10px;text-transform:none;letter-spacing:0">(e.g. 2.8 4x4 Legend)</span></label>
-      <input type="text" id="v-variant" placeholder="Optional — e.g. 2.8 4x4 Legend" autocapitalize="words">
+      <label class="input-label">Modifications <span style="color:var(--text-dim);font-size:10px;text-transform:none;letter-spacing:0">optional</span></label>
+      <input type="text" id="v-mods" placeholder="e.g. Stage 2 tune, exhaust, intercooler" autocapitalize="sentences">
     </div>
   </div>
 
@@ -640,6 +650,229 @@ const SA_VEHICLES = {
 };
 
 const YEARS = Array.from({length:37},(_,i)=>2026-i);
+
+// Variant options per make|model — shown in the variant dropdown
+const VARIANTS = {
+  // Toyota
+  "Toyota|Hilux":["2.0 VVTi SRX","2.4 GD-6 SRX","2.4 GD-6 Raider","2.8 GD-6 Raider","2.8 GD-6 Legend","2.8 GD-6 Legend 50","2.8 GD-6 GR Sport","4.0 V6 Legend 50"],
+  "Toyota|Fortuner":["2.4 GD-6 4×2","2.4 GD-6 4×4","2.8 GD-6 4×4","2.8 GD-6 Epiq","4.0 V6 Epic"],
+  "Toyota|Land Cruiser":["79 Series 4.5 V8","200 GX","200 VX","200 VX-R","200 Sahara","300 GX","300 VX","300 VX-R","300 Sahara"],
+  "Toyota|Prado":["2.8 GD-6 TX","2.8 GD-6 VX","2.8 GD-6 VX-L"],
+  "Toyota|Corolla":["1.8 XS","1.8 XR","2.0 XR","2.0 GR Sport","Cross 1.8 XS","Cross 2.0 GR Sport"],
+  "Toyota|RAV4":["2.0","2.5 AWD","2.5 AWD Premium","2.5 PHEV"],
+  "Toyota|Yaris":["1.0 Xi","1.5 Xi","1.5 XS","Cross 1.5 XS","Cross 1.5 XR"],
+  "Toyota|Avanza":["1.3 SX","1.5 TX","1.5 Xi"],
+  "Toyota|GR86":["2.4 MT","2.4 AT"],
+  "Toyota|GR Supra":["2.0 GR Sport","3.0","3.0 A91"],
+  "Toyota|Alphard":["2.5 Executive Lounge","3.5 V6"],
+  // Volkswagen
+  "Volkswagen|Polo":["1.0 TSI Trendline","1.0 TSI Comfortline","1.6 Conceptline","GTI 2.0 TSI"],
+  "Volkswagen|Golf":["1.4 TSI Comfortline","1.4 TSI R-Line","2.0 TDI R-Line","GTI 2.0 TSI","GTI Clubsport","R 2.0 TSI 4Motion"],
+  "Volkswagen|Amarok":["2.0 BiTDI SX","2.0 BiTDI Highline","3.0 TDI Highline","3.0 TDI Aventura","3.5 TSI V6 Aventura"],
+  "Volkswagen|Tiguan":["1.4 TSI Trendline","1.4 TSI Comfortline","2.0 TSI R-Line","2.0 TDI R-Line","R 2.0 TSI 4Motion"],
+  "Volkswagen|T-Roc":["1.4 TSI Design","2.0 TSI R-Line","2.0 TSI R"],
+  "Volkswagen|Taigo":["1.0 TSI Trendline","1.0 TSI Comfortline","1.5 TSI R-Line"],
+  "Volkswagen|T-Cross":["1.0 TSI Trendline","1.0 TSI Comfortline","1.5 TSI R-Line"],
+  // Ford
+  "Ford|Ranger":["2.0 XL 4×2","2.0 XLS 4×2","2.0 XLT 4×2","2.0 XLT 4×4","2.0 Wildtrak 4×4","3.0 Stormtrak","3.0 Raptor"],
+  "Ford|Mustang":["2.3 EcoBoost","5.0 V8 GT","5.0 V8 Dark Horse","5.2 GT500 Shelby"],
+  "Ford|Everest":["2.0 XLS 4×2","2.0 XLT 4×2","2.0 XLT 4×4","3.0 V6 Sport","3.0 V6 Platinum"],
+  "Ford|EcoSport":["1.0 EcoBoost Ambiente","1.0 EcoBoost Trend","1.0 EcoBoost Titanium","1.5 TDCi Titanium"],
+  "Ford|Territory":["1.5 EcoBoost Trend","1.5 EcoBoost Titanium"],
+  "Ford|Explorer":["3.0 EcoBoost Platinum"],
+  "Ford|F-150":["3.5 EcoBoost Raptor","5.0 V8 Limited"],
+  // Nissan
+  "Nissan|Navara":["2.5 XE","2.5 SE","2.5 LE","2.5 PRO-4X"],
+  "Nissan|X-Trail":["2.0 Visia","2.0 Acenta","2.0 Tekna","1.5 e-Power Tekna"],
+  "Nissan|Qashqai":["1.3 DIG-T Visia","1.3 DIG-T Acenta","1.3 DIG-T Tekna"],
+  "Nissan|Patrol":["4.0 V6 XE","4.0 V6 SE","4.0 V6 LE","5.6 V8 Platinum"],
+  "Nissan|GT-R":["3.8 V6 Premium","3.8 V6 Track Edition","3.8 V6 NISMO"],
+  "Nissan|370Z":["3.7 V6","3.7 V6 NISMO"],
+  "Nissan|Magnite":["1.0 Turbo Visia","1.0 Turbo Acenta","1.0 Turbo Tekna"],
+  "Nissan|Juke":["1.0 DIG-T Visia","1.0 DIG-T Acenta","1.0 DIG-T Tekna"],
+  // BMW
+  "BMW|3 Series":["318i","320i","330i","M340i xDrive","320d","330d","M340d xDrive"],
+  "BMW|4 Series":["420i Coupé","430i Coupé","M440i xDrive","M4 Competition","M4 CS","M4 CSL"],
+  "BMW|5 Series":["520i","523i","530i","540i xDrive","530d","M550i xDrive","M5","M5 CS"],
+  "BMW|7 Series":["730d","740i","750i xDrive","760i xDrive","Alpina B7","M760e xDrive"],
+  "BMW|M2":["3.0 Competition","3.0 CS"],
+  "BMW|M3":["3.0 Competition","3.0 Competition xDrive","CS","CSL"],
+  "BMW|M4":["3.0 Competition","3.0 Competition xDrive","GTS","CSL"],
+  "BMW|M5":["4.4 V8","CS","Competition"],
+  "BMW|X3":["xDrive20d","xDrive20i","xDrive30i","M40i","M Competition"],
+  "BMW|X4":["xDrive20d","xDrive30i","M40i","M Competition"],
+  "BMW|X5":["xDrive30d","xDrive40i","M50i","M60i","M Competition"],
+  "BMW|X6":["xDrive30d","xDrive40i","M50i","M60i","M Competition"],
+  "BMW|X7":["xDrive30d","xDrive40i","M60i"],
+  "BMW|Z4":["sDrive20i","sDrive30i","M40i"],
+  "BMW|i4":["eDrive40","M50"],
+  "BMW|iX":["xDrive40","xDrive50","M60"],
+  // Mercedes-Benz
+  "Mercedes-Benz|A-Class":["A180","A200","A220","AMG A35","AMG A45 S"],
+  "Mercedes-Benz|C-Class":["C180","C200","C220d","C300","C300d","AMG C43","AMG C63","AMG C63 S E Performance"],
+  "Mercedes-Benz|E-Class":["E200","E220d","E300","E400d","AMG E53","AMG E63 S"],
+  "Mercedes-Benz|S-Class":["S350d","S400d","S450","S500","S580","Maybach S580","AMG S63","AMG S63 E Performance"],
+  "Mercedes-Benz|GLA":["GLA180","GLA200","GLA220d","AMG GLA35","AMG GLA45 S"],
+  "Mercedes-Benz|GLC":["GLC200","GLC220d","GLC300","GLC300d","AMG GLC43","AMG GLC63 S"],
+  "Mercedes-Benz|GLE":["GLE300d","GLE350d","GLE400d","GLE450","AMG GLE53","AMG GLE63 S"],
+  "Mercedes-Benz|G-Class":["G350d","G500","AMG G63","AMG G63 Grand Edition"],
+  "Mercedes-Benz|CLA":["CLA180","CLA200","CLA220d","AMG CLA35","AMG CLA45 S"],
+  "Mercedes-Benz|CLS":["CLS220d","CLS350d","AMG CLS53"],
+  "Mercedes-Benz|AMG GT":["AMG GT 43","AMG GT 53","AMG GT 63","AMG GT 63 S","AMG GT R","AMG GT Black Series"],
+  // Audi
+  "Audi|A1":["25 TFSI","30 TFSI","35 TFSI"],
+  "Audi|A3":["30 TFSI","35 TFSI","35 TDI","40 TFSI","RS3 Sedan","RS3 Sportback"],
+  "Audi|A4":["35 TFSI","40 TFSI","35 TDI","40 TDI","45 TFSI quattro","RS4 Avant"],
+  "Audi|A5":["35 TFSI","40 TFSI","40 TDI","45 TFSI quattro","RS5 Coupé","RS5 Sportback"],
+  "Audi|A6":["40 TFSI","40 TDI","45 TFSI quattro","55 TFSI quattro","RS6 Avant"],
+  "Audi|A7":["40 TDI","55 TFSI quattro","RS7 Sportback"],
+  "Audi|Q2":["30 TFSI","35 TFSI","35 TDI"],
+  "Audi|Q3":["35 TFSI","35 TDI","40 TFSI quattro","RS Q3"],
+  "Audi|Q5":["35 TDI","40 TDI quattro","45 TFSI quattro","SQ5 TDI","RS Q5"],
+  "Audi|Q7":["50 TDI quattro","55 TFSI quattro","SQ7 TDI"],
+  "Audi|Q8":["50 TDI quattro","55 TFSI quattro","RS Q8","SQ8"],
+  "Audi|R8":["5.2 V10","5.2 V10 Performance","5.2 V10 GT RWD"],
+  "Audi|TT":["1.8 TFSI","2.0 TFSI","TTS 2.0 TFSI","TTRS 2.5 quattro"],
+  "Audi|e-tron":["50 quattro","55 quattro","S quattro","GT quattro","RS GT quattro"],
+  // Mitsubishi
+  "Mitsubishi|Triton":["2.4 MIVEC GLX","2.4 MIVEC GLS","2.4 Di-D GLX","2.4 Di-D GLS","2.4 Di-D Xtreme"],
+  "Mitsubishi|Pajero Sport":["2.4 GLS","2.4 GLS Premium","3.0 V6 GLS"],
+  "Mitsubishi|Eclipse Cross":["2.0 GLS","2.0 GLS Premium","PHEV"],
+  "Mitsubishi|Outlander":["2.0 GLS","2.4 GLS AWD","PHEV"],
+  "Mitsubishi|ASX":["2.0 GLX","2.0 GLS"],
+  // Isuzu
+  "Isuzu|D-Max":["1.9 HO HR","1.9 HO TC HR","3.0 LX","3.0 X-Rider","3.0 X-Terrain"],
+  "Isuzu|MU-X":["1.9 LS","1.9 LSE","3.0 LS-U","3.0 LS-T"],
+  // Mazda
+  "Mazda|Mazda2":["1.5 Dynamic","1.5 Individual"],
+  "Mazda|Mazda3":["1.5 Dynamic","2.0 Active","2.0 Individual","2.5 Astina","2.5 Turbo Astina"],
+  "Mazda|Mazda6":["2.0 Active","2.0 Individual","2.2D Astina","2.5 Astina"],
+  "Mazda|CX-3":["2.0 Active","2.0 Individual","2.0 Akari"],
+  "Mazda|CX-5":["2.0 Active","2.0 Individual","2.5 Akari","2.2D Active","2.2D Individual","2.2D Akari"],
+  "Mazda|CX-30":["2.0 Active","2.0 Individual","2.0 Akari"],
+  "Mazda|CX-60":["3.3D 4WD Homura","3.3D PHEV 4WD"],
+  "Mazda|MX-5":["1.5 Roadster","2.0 Roadster","2.0 RF","2.0 Sport Black"],
+  // Honda
+  "Honda|Jazz":["1.2 Comfort","1.5 Trend","1.5 Elegance","RS e:HEV"],
+  "Honda|Civic":["1.0 Comfort","1.5 Elegance","1.5 Sport","2.0 Type R"],
+  "Honda|HR-V":["1.5 Comfort","1.5 Elegance","e:HEV Elegance"],
+  "Honda|CR-V":["2.0 Comfort","2.0 Sport","1.5T AWD"],
+  "Honda|WR-V":["1.5 Elegance","1.5 RS"],
+  // Hyundai
+  "Hyundai|i10":["1.0 Motion","1.2 Fluid"],
+  "Hyundai|i20":["1.2 Motion","1.4 Fluid","1.0T N-Line","1.0T N"],
+  "Hyundai|i30":["1.4T DCT","2.0T N Line","2.0T N","2.0T N 8-speed DCT"],
+  "Hyundai|Creta":["1.5 Motion","1.5 Executive","1.5 Elite","1.4T Executive","1.4T Elite"],
+  "Hyundai|Tucson":["2.0 Motion","2.0 Premium","1.6T Premium","1.6T Elite N-Line","1.6 PHEV"],
+  "Hyundai|Santa Fe":["2.0 Premium","2.2D AWD Elite","1.6 PHEV"],
+  "Hyundai|Staria":["2.2D Executive","2.2D Elite"],
+  "Hyundai|Venue":["1.0T Motion","1.0T Fluid","1.0T Executive"],
+  "Hyundai|Ioniq 5":["Standard RWD","Long Range RWD","Long Range AWD","N"],
+  "Hyundai|Ioniq 6":["Standard RWD","Long Range RWD","Long Range AWD"],
+  // Kia
+  "Kia|Picanto":["1.0 Street","1.0 Smart","1.2 Street","1.2 Smart"],
+  "Kia|Rio":["1.2 LX","1.4 EX","1.0T GT Line"],
+  "Kia|Seltos":["1.5 EX","1.5 SX","1.4T SX"],
+  "Kia|Sportage":["2.0 LX","2.0 EX","1.6T AWD EX","1.6 PHEV"],
+  "Kia|Sorento":["2.2D AWD EX","1.6 PHEV AWD"],
+  "Kia|Stinger":["2.0T GT-Line","3.3T V6 GT","3.3T V6 GT AWD"],
+  "Kia|EV6":["Standard RWD","Long Range RWD","Long Range AWD","GT"],
+  "Kia|EV9":["Long Range RWD","Long Range AWD GT-Line"],
+  // Suzuki
+  "Suzuki|Swift":["1.2 GA","1.2 GL","1.4T Sport"],
+  "Suzuki|Vitara":["1.6 GL","1.4T GL+","1.4T AllGrip"],
+  "Suzuki|Jimny":["1.5 GL","1.5 GLX"],
+  "Suzuki|S-Cross":["1.4T GL","1.4T AllGrip"],
+  "Suzuki|Fronx":["1.5 GL","1.4T GL+"],
+  "Suzuki|Ertiga":["1.5 GL","1.5 GLX"],
+  // Renault
+  "Renault|Kwid":["1.0 Expression","1.0 Dynamique","1.0 Climber"],
+  "Renault|Clio":["1.0 TCe Expression","1.0 TCe Dynamique","1.3 TCe RS Line","1.6 RS Trophy"],
+  "Renault|Sandero":["1.0 Expression","1.0 Stepway","1.3 TCe Stepway"],
+  "Renault|Duster":["1.5 dCi Dynamique","1.6 Expression","1.6 Dynamique"],
+  "Renault|Captur":["1.0 TCe Expression","1.3 TCe Dynamique","1.3 TCe RS Line"],
+  // Land Rover
+  "Land Rover|Defender":["90 D200","90 D300","90 P400","90 V8","110 D200","110 D300","110 P400","110 P400e","110 V8","130 D300"],
+  "Land Rover|Discovery":["D250","D300","P360 HSE","P360 R-Dynamic","P500 R-Dynamic"],
+  "Land Rover|Discovery Sport":["D150","D200","P200","P250","P300e"],
+  "Land Rover|Range Rover":["D250","D350","P400","P530","Autobiography","SV","Autobiography SWB"],
+  "Land Rover|Range Rover Sport":["D250","D350","P400","P510e PHEV","SV Edition One","SV Bespoke"],
+  "Land Rover|Range Rover Velar":["D200","D300","P250","P400","SVAutobiography"],
+  "Land Rover|Range Rover Evoque":["D165","D200","P200","P250","P300e","Bronze Edition"],
+  // Jeep
+  "Jeep|Wrangler":["2.0T Sport","2.0T Sahara","3.6 V6 Rubicon","4xe PHEV Rubicon"],
+  "Jeep|Gladiator":["3.6 V6 Sport","3.6 V6 Overland","3.6 V6 Rubicon"],
+  "Jeep|Grand Cherokee":["3.6 V6 Laredo","5.7 V8 Overland","5.7 V8 Summit","6.4 HEMI SRT","4xe PHEV"],
+  "Jeep|Compass":["1.4T Longitude","1.4T Limited","4xe PHEV"],
+  // Dodge
+  "Dodge|Challenger":["3.6 SXT","5.7 R/T","6.4 R/T Scat Pack","6.2 Hellcat","6.2 Hellcat Redeye","6.2 Demon 170"],
+  "Dodge|Charger":["3.6 SXT","5.7 R/T","6.4 R/T Scat Pack","6.2 Hellcat","6.2 Hellcat Redeye","6.2 Super Bee"],
+  "Dodge|Viper":["8.4 V10 SRT","8.4 V10 ACR"],
+  // Porsche
+  "Porsche|911":["Carrera","Carrera S","Carrera 4","Carrera 4S","Targa 4","Targa 4S","GT3","GT3 RS","GT3 Touring","Turbo","Turbo S"],
+  "Porsche|Cayman":["2.0T","2.4T S","GTS 4.0","GT4","GT4 RS"],
+  "Porsche|Boxster":["2.0T","2.4T S","GTS 4.0","Spyder"],
+  "Porsche|Cayenne":["3.0T","S 2.9T","GTS 4.0","Turbo 4.0","Turbo GT","e-Hybrid"],
+  "Porsche|Macan":["2.0T","GTS","Turbo","Electric Standard","Electric Turbo"],
+  "Porsche|Panamera":["2.9T","4S Diesel","GTS 4.0","Turbo 4.0","Turbo S e-Hybrid"],
+  "Porsche|Taycan":["RWD","4S","GTS","Turbo","Turbo S","Cross Turismo Turbo S"],
+  // Lamborghini
+  "Lamborghini|Huracán":["EVO RWD","EVO AWD","EVO Spyder","Tecnica","STO","LP 610-4"],
+  "Lamborghini|Urus":["S","Performante"],
+  "Lamborghini|Revuelto":["V12 Hybrid"],
+  // Ferrari
+  "Ferrari|Roma":["3.9 V8 Turbo","Roma Spider"],
+  "Ferrari|Portofino":["3.9 V8 Turbo M"],
+  "Ferrari|SF90":["Stradale","Spider","XX"],
+  "Ferrari|488":["GTB","Spider","Pista","Pista Spider"],
+  "Ferrari|F8":["Tributo","Spider"],
+  "Ferrari|812":["Superfast","GTS","Competizione","Competizione A"],
+  "Ferrari|296":["GTB","GTS"],
+  "Ferrari|GTC4":["Lusso","Lusso T"],
+  // Maserati
+  "Maserati|Ghibli":["3.0 V6","3.0 S Q4","3.8 Trofeo"],
+  "Maserati|Levante":["3.0 V6","3.0 S Q4","3.0 GTS","3.8 Trofeo"],
+  "Maserati|Quattroporte":["3.0 V6","3.0 S Q4","3.8 Trofeo"],
+  "Maserati|Grecale":["2.0 GT","2.0 Modena","3.0 Trofeo","Folgore EV"],
+  "Maserati|GranTurismo":["Modena","Trofeo","Folgore EV"],
+  // Alfa Romeo
+  "Alfa Romeo|Giulia":["2.0 Sprint","2.0 Veloce","2.9 V6 Quadrifoglio"],
+  "Alfa Romeo|Stelvio":["2.0 Sprint","2.0 Veloce","2.9 V6 Quadrifoglio"],
+  "Alfa Romeo|Tonale":["1.5 Sprint","1.5 Veloce","1.3 PHEV Veloce"],
+  // Mahindra
+  "Mahindra|Pik Up":["2.2 S6 4×2","2.2 S10 4×2","2.2 S10 4×4"],
+  "Mahindra|Thar":["2.2 mHawk AX","2.0 Petrol LX","2.2 mHawk LX"],
+  "Mahindra|XUV300":["1.2 T4","1.2 T6","1.2 T8 AMT"],
+  "Mahindra|XUV700":["2.0 MX5","2.2 D AX7","2.2 D AX7 AWD"],
+  // GWM
+  "GWM|P-Series":["2.0 MT 4×2","2.0 AT 4×2","2.0 AT 4×4"],
+  "GWM|Cannon":["2.0 MT 4×2","2.0 AT 4×2","2.0 AT 4×4","2.0 AT 4×4 Xscape"],
+  "GWM|Steed":["2.0 S","2.0 SX","2.4 SX"],
+  "GWM|Haval H6":["1.5T MT","1.5T DCT","2.0T DCT","HEV"],
+  "GWM|Haval Jolion":["1.5T MT","1.5T DCT","HEV"],
+  "GWM|Tank 300":["2.0T AT 4×4"],
+  "GWM|ORA Good Cat":["Long Range","Ultra Long Range"],
+  // Chery
+  "Chery|Tiggo 4":["1.5 TX","1.5T TX+"],
+  "Chery|Tiggo 4 Pro":["1.5T Executive"],
+  "Chery|Tiggo 7":["1.5T TX","1.5T TX+","1.5T Executive"],
+  "Chery|Tiggo 7 Pro":["1.5T Executive","2.0T Executive"],
+  "Chery|Tiggo 8":["1.5T TX","2.0T Executive","PHEV"],
+  "Chery|Tiggo 8 Pro":["1.6T Executive","2.0T Executive Max","PHEV"],
+  // Lexus
+  "Lexus|IS":["IS 300","IS 300h","IS 350","IS 500 F Sport"],
+  "Lexus|LC":["LC 500","LC 500h"],
+  "Lexus|RC":["RC 300","RC 350 F Sport","RC F"],
+  "Lexus|NX":["NX 250","NX 350h","NX 450h+"],
+  "Lexus|RX":["RX 350","RX 350h","RX 450h+","RX 500h F Sport"],
+  "Lexus|GX":["GX 460 Premium","GX 550 Luxury"],
+  "Lexus|LX":["LX 600 Urban","LX 600 F Sport"],
+  // Chevrolet
+  "Chevrolet|Corvette":["Stingray 6.2 V8","Z06 5.5 V8","E-Ray PHEV"],
+  "Chevrolet|Silverado":["5.3 V8","6.2 V8","3.0 Duramax"],
+  "Chevrolet|Trailblazer":["1.2T LT","1.2T RS","1.3T RS AWD"],
+};
+
 
 const BRAND_DOMAINS = {
   "Toyota":"toyota.com","Volkswagen":"vw.com","Ford":"ford.com","Nissan":"nissan.com",
@@ -1274,7 +1507,36 @@ function onMakeChange(){
 
 function onModelChange(){
   const make=document.getElementById('v-make').value;
+  const model=document.getElementById('v-model').value;
   if(make)updateBrandHeader(make);
+  // Populate variant select
+  const vSel=document.getElementById('v-variant-select');
+  vSel.innerHTML='<option value="">Select variant</option>';
+  const key=make+'|'+model;
+  if(VARIANTS[key]){
+    VARIANTS[key].forEach(v=>{
+      const o=document.createElement('option');o.value=v;o.textContent=v;vSel.appendChild(o);
+    });
+  }
+  const other=document.createElement('option');other.value='__custom__';other.textContent='Other / Custom…';vSel.appendChild(other);
+  document.getElementById('v-variant-custom-group').style.display='none';
+}
+
+function onVariantChange(){
+  const custom=document.getElementById('v-variant-select').value==='__custom__';
+  document.getElementById('v-variant-custom-group').style.display=custom?'':'none';
+  if(custom)document.getElementById('v-variant').focus();
+}
+
+function getVariantValue(){
+  const sel=document.getElementById('v-variant-select');
+  if(!sel.value||sel.value==='')return '';
+  if(sel.value==='__custom__')return document.getElementById('v-variant').value.trim();
+  return sel.value;
+}
+
+function getModsValue(){
+  return document.getElementById('v-mods').value.trim();
 }
 
 function populateYears(){
@@ -1348,9 +1610,22 @@ function applyChip(i){
   onMakeChange();
   setTimeout(()=>{
     document.getElementById('v-model').value=v.model||'';
-    document.getElementById('v-year').value=v.year||'';
-    document.getElementById('v-variant').value=v.variant||'';
     onModelChange();
+    setTimeout(()=>{
+      // Try to set known variant in select; fall back to custom
+      const vSel=document.getElementById('v-variant-select');
+      const knownOpt=[...vSel.options].find(o=>o.value===v.variant);
+      if(knownOpt){
+        vSel.value=v.variant;
+        document.getElementById('v-variant-custom-group').style.display='none';
+      } else if(v.variant){
+        vSel.value='__custom__';
+        document.getElementById('v-variant').value=v.variant;
+        document.getElementById('v-variant-custom-group').style.display='';
+      }
+      document.getElementById('v-year').value=v.year||'';
+      document.getElementById('v-mods').value=v.mods||'';
+    },60);
   },50);
 }
 
@@ -1382,10 +1657,22 @@ function openVehiclePicker(){
       onMakeChange();
       setTimeout(()=>{
         document.getElementById('v-model').value=currentVehicle.model||'';
-        document.getElementById('v-year').value=currentVehicle.year||'';
-        document.getElementById('v-variant').value=currentVehicle.variant||'';
         onModelChange();
-      },60);
+        setTimeout(()=>{
+          const vSel=document.getElementById('v-variant-select');
+          const knownOpt=[...vSel.options].find(o=>o.value===currentVehicle.variant);
+          if(knownOpt){
+            vSel.value=currentVehicle.variant;
+            document.getElementById('v-variant-custom-group').style.display='none';
+          } else if(currentVehicle.variant){
+            vSel.value='__custom__';
+            document.getElementById('v-variant').value=currentVehicle.variant;
+            document.getElementById('v-variant-custom-group').style.display='';
+          }
+          document.getElementById('v-year').value=currentVehicle.year||'';
+          document.getElementById('v-mods').value=currentVehicle.mods||'';
+        },60);
+      },50);
     },10);
   }
 }
@@ -1408,11 +1695,12 @@ function saveVehicleToFavourites(){
   const make=document.getElementById('v-make').value;
   const model=document.getElementById('v-model').value;
   const year=document.getElementById('v-year').value;
-  const variant=document.getElementById('v-variant').value.trim();
+  const variant=getVariantValue();
+  const mods=getModsValue();
   if(!make){showToast('Select a make','error');return;}
   if(!model){showToast('Select a model','error');return;}
   if(!year){showToast('Select a year','error');return;}
-  const v={make,model,year,variant};
+  const v={make,model,year,variant,mods};
   currentVehicle=v;
   persistCurrentVehicle();
   updateVehicleBar();
@@ -1425,11 +1713,12 @@ function confirmVehicle(){
   const make=document.getElementById('v-make').value;
   const model=document.getElementById('v-model').value;
   const year=document.getElementById('v-year').value;
-  const variant=document.getElementById('v-variant').value.trim();
+  const variant=getVariantValue();
+  const mods=getModsValue();
   if(!make){showToast('Select a make','error');return;}
   if(!model){showToast('Select a model','error');return;}
   if(!year){showToast('Select a year','error');return;}
-  const v={make,model,year,variant};
+  const v={make,model,year,variant,mods};
   if(vehiclePickerMode==='pre'){
     currentVehicle=v;
     persistCurrentVehicle();
@@ -1456,9 +1745,10 @@ function updateVehicleBar(){
     return;
   }
   bar.classList.add('set');
-  const {make,model,year,variant}=currentVehicle;
+  const {make,model,year,variant,mods}=currentVehicle;
   name.textContent=[make,model].filter(Boolean).join(' ');
-  sub.textContent=[year,variant].filter(Boolean).join(' · ')||'';
+  const subParts=[year,variant].filter(Boolean).join(' · ');
+  sub.textContent=mods?subParts+' — '+mods:subParts;
   action.textContent='CHANGE';
   const domain=BRAND_DOMAINS[make];
   if(domain){
@@ -1476,17 +1766,17 @@ function saveRunWithVehicle(v){
   if(!u)return;
   const res=window._pendingResult;
   if(!res)return;
-  const {make,model,year,variant}=v;
+  const {make,model,year,variant,mods}=v;
   if(appWs&&appWs.readyState===1){
     appWs.send(JSON.stringify({type:'save_run',run:{
       date:new Date().toISOString(),
       mode:res.mode,
       time:fmtTime(res.timeMs),timeMs:res.timeMs,
       distance:res.distance,topSpeed:res.topSpeed,
-      vehicleMake:make,vehicleModel:model,vehicleYear:year,vehicleVariant:variant,
+      vehicleMake:make,vehicleModel:model,vehicleYear:year,vehicleVariant:variant,vehicleMods:mods||'',
       split100:res.split100||0
     }}));
-    appWs.send(JSON.stringify({type:'save_vehicle',vehicle:{make,model,year,variant}}));
+    appWs.send(JSON.stringify({type:'save_vehicle',vehicle:{make,model,year,variant,mods:mods||''}}));
   }
   window._pendingResult=null;
   showToast('Run saved!');
@@ -1558,6 +1848,7 @@ function renderLeaderboard(){
           <div class="lb-detail-item"><div class="lb-detail-val">${dist}</div><div class="lb-detail-key">Distance</div></div>
           <div class="lb-detail-item"><div class="lb-detail-val">${dateStr}</div><div class="lb-detail-key">Date</div></div>
         </div>
+        ${r.vehicleMods?`<div style="color:var(--text-dim);font-size:12px;margin-top:8px;padding:6px 10px;background:rgba(255,255,255,.04);border-radius:6px">🔧 ${escHtml(r.vehicleMods)}</div>`:''}
         ${(u?.isAdmin||r.userId===u?.id)?`<button class="run-delete" onclick="event.stopPropagation();deleteRun('${runId}')">DELETE RUN</button>`:''}
       </div>`;
     });
