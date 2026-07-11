@@ -750,7 +750,7 @@ let lastGPS=null,gpsSpeed=0,gpsDist=0,gpsMaxSpeed=0;
 let split100Saved=false,split100Time=0;
 // Dead-reckoning (accel integration between GPS fixes)
 let drSpeed=0,drLastT=null,drAxis=null,drAxisSign=1,drCalibrated=false,drSamples=[];
-let customTargetVal=null,customTargetIsSpeed=false;
+let customTargetVal=0,customTargetUnit='';
 let armTime=0;
 let currentVehicle=null; // {make,model,year,variant}
 let vehiclePickerMode='pre'; // 'pre' = before run, 'post' = after run save
@@ -786,6 +786,11 @@ function armRace(){
   raceState='armed';
   armTime=Date.now();
   split100Saved=false;split100Time=0;gpsDist=0;gpsMaxSpeed=0;lastGPS=null;
+  // Snapshot custom target so DOM isn't read during a live run
+  if(raceMode==='custom_dist'||raceMode==='custom_speed'){
+    customTargetVal=parseFloat(document.getElementById('custom-val').value)||200;
+    customTargetUnit=document.getElementById('custom-unit').value||'m';
+  }
   const modeLabels={'0100':'0 → 100 km/h','400m':'400 Metres','custom_dist':'Custom Distance','custom_speed':'Custom Speed'};
   document.getElementById('armed-mode-label').textContent=modeLabels[raceMode]||raceMode;
   drSpeed=0;drLastT=null;drAxis=null;drAxisSign=1;drCalibrated=false;drSamples=[];
@@ -925,11 +930,9 @@ function onGPS(pos){
     if(raceMode==='400m'&&gpsDist>=400)finishAtDistance(400,spd);
     // custom finish
     if(raceMode==='custom_dist'||raceMode==='custom_speed'){
-      const val=parseFloat(document.getElementById('custom-val').value)||200;
-      const unit=document.getElementById('custom-unit').value;
-      if(unit==='m'&&gpsDist>=val)finishAtDistance(val,spd);
-      if(unit==='km'&&gpsDist>=val*1000)finishAtDistance(val*1000,spd);
-      if(unit==='km/h'&&spd>=val)finishRace();
+      if(customTargetUnit==='m'&&gpsDist>=customTargetVal)finishAtDistance(customTargetVal,spd);
+      else if(customTargetUnit==='km'&&gpsDist>=customTargetVal*1000)finishAtDistance(customTargetVal*1000,spd);
+      else if(customTargetUnit==='km/h'&&spd>=customTargetVal)finishRace();
     }
     // split 100
     if(!split100Saved&&spd>=100){split100Saved=true;split100Time=performance.now()-raceStart;}
@@ -1009,8 +1012,10 @@ function listenMotion(){
       drSpeed=Math.max(0,drSpeed+fwd*dt);
       gpsSpeed=drSpeed*3.6; // km/h — tickTimer reads this at 60 Hz
       if(drSpeed*3.6>gpsMaxSpeed)gpsMaxSpeed=drSpeed*3.6;
-      // High-frequency 0-100 finish (within ~16 ms vs ~500 ms with GPS alone)
-      if(raceMode==='0100'&&drSpeed*3.6>=100)finishRace();
+      // High-frequency finish detection at 60 Hz
+      const kmh=drSpeed*3.6;
+      if(raceMode==='0100'&&kmh>=100)finishRace();
+      if(raceMode==='custom_speed'&&customTargetUnit==='km/h'&&kmh>=customTargetVal)finishRace();
     }
   });
 }
