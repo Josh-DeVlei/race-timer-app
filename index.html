@@ -277,11 +277,16 @@ select option{background:#0a0f1e;color:#e0e0e0}
         <input type="password" id="login-pass" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <button class="btn btn-green btn-block" onclick="doLogin()">LOGIN</button>
+      <div style="text-align:center;margin-top:10px"><span style="color:var(--text-dim);font-size:13px;cursor:pointer;text-decoration:underline" onclick="showForgotStep(1)">Forgot password?</span></div>
     </div>
     <div id="register-form" style="display:none">
       <div class="input-group">
         <label class="input-label">Username</label>
         <input type="text" id="reg-user" placeholder="Choose a username" autocomplete="username" autocapitalize="none">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Email</label>
+        <input type="email" id="reg-email" placeholder="Your email (for account recovery)">
       </div>
       <div class="input-group">
         <label class="input-label">Password</label>
@@ -293,6 +298,33 @@ select option{background:#0a0f1e;color:#e0e0e0}
       </div>
       <button class="btn btn-green btn-block" onclick="doRegister()">CREATE ACCOUNT</button>
     </div>
+
+    <!-- Forgot password step 1: enter email -->
+    <div id="forgot-form" style="display:none">
+      <div style="color:var(--text-dim);font-size:13px;margin-bottom:14px;text-align:center">Enter your registered email and we'll send you a reset code.</div>
+      <div class="input-group">
+        <label class="input-label">Email Address</label>
+        <input type="email" id="forgot-email" placeholder="Your registered email" onkeydown="if(event.key==='Enter')submitForgot()">
+      </div>
+      <button class="btn btn-green btn-block" onclick="submitForgot()">SEND RESET CODE</button>
+      <button class="btn btn-outline btn-block" style="margin-top:8px" onclick="showForgotStep(0)">← BACK TO LOGIN</button>
+    </div>
+
+    <!-- Forgot password step 2: enter code + new password -->
+    <div id="forgot-step2" style="display:none">
+      <div style="color:var(--green);font-size:13px;margin-bottom:14px;text-align:center" id="forgot-sent-msg">Check your email for the 6-digit code.</div>
+      <div class="input-group">
+        <label class="input-label">Reset Code</label>
+        <input type="text" id="forgot-code" placeholder="6-digit code" maxlength="6" inputmode="numeric">
+      </div>
+      <div class="input-group">
+        <label class="input-label">New Password</label>
+        <input type="password" id="forgot-newpass" placeholder="New password (min 4 chars)" onkeydown="if(event.key==='Enter')submitReset()">
+      </div>
+      <button class="btn btn-green btn-block" onclick="submitReset()">RESET PASSWORD</button>
+      <button class="btn btn-outline btn-block" style="margin-top:8px" onclick="showForgotStep(0)">← BACK TO LOGIN</button>
+    </div>
+
     <div class="auth-error" id="auth-error"></div>
   </div>
 </section>
@@ -624,30 +656,137 @@ const BRAND_DOMAINS = {
 };
 
 // -----------------------------------------------
-// STORAGE
+// SERVER STATE
 // -----------------------------------------------
 
-function getUsers(){return JSON.parse(localStorage.getItem('rt_users')||'[]')}
-function saveUsers(u){localStorage.setItem('rt_users',JSON.stringify(u))}
-function getRuns(){return JSON.parse(localStorage.getItem('rt_runs')||'[]')}
-function saveRuns(r){localStorage.setItem('rt_runs',JSON.stringify(r))}
-function getSession(){return localStorage.getItem('rt_session')||null}
-function setSession(id){localStorage.setItem('rt_session',id)}
-function clearSession(){localStorage.removeItem('rt_session')}
+let currentUserData = null; // live user object from server
+let serverRuns = [];         // all runs from server
+let serverUsers = [];        // all users — admin only
+let appWs = null;
+let wsReady = false;
+let inApp = false;
 
 function currentUser(){
-  const id=getSession();
-  return id?getUsers().find(u=>u.id===id)||null:null;
+  if(currentUserData)return currentUserData;
+  // Optimistic fallback from cached session data
+  try{return JSON.parse(localStorage.getItem('rt_session_data')||'null');}catch{return null;}
 }
 
-// Seed admin if not exists
-(function seedAdmin(){
-  const users=getUsers();
-  if(!users.find(u=>u.username==='admin')){
-    users.push({id:'admin',username:'admin',password:'admin',isAdmin:true,savedVehicles:[]});
-    saveUsers(users);
-  }
-})();
+// -----------------------------------------------
+// WEBSOCKET (auth + chat + data unified)
+// -----------------------------------------------
+
+function initWS(){
+  if(appWs&&appWs.readyState<2)return;
+  const proto=location.protocol==='https:'?'wss':'ws';
+  appWs=new WebSocket(proto+'://'+location.host+'/ws');
+  let pingInterval=null;
+  const disc=document.getElementById('chat-disconnected');
+
+  appWs.onopen=()=>{
+    wsReady=true;
+    if(disc)disc.style.display='none';
+    document.getElementById('chat-send-btn').disabled=false;
+    document.getElementById('chat-photo-btn').disabled=false;
+    pingInterval=setInterval(()=>{if(appWs.readyState===1)appWs.send(JSON.stringify({type:'ping'}));},20000);
+    // Always request runs (public)
+    appWs.send(JSON.stringify({type:'get_runs'}));
+    // Try to restore auth session
+    const userId=localStorage.getItem('rt_session');
+    if(userId)appWs.send(JSON.stringify({type:'restore_session',userId}));
+  };
+
+  appWs.onmessage=e=>{
+    try{
+      const data=JSON.parse(e.data);
+
+      // ── Auth ────────────────────────────────────────────────────────────
+      if(data.type==='auth_ok'){
+        currentUserData=data.user;
+        localStorage.setItem('rt_session',data.user.id);
+        localStorage.setItem('rt_session_data',JSON.stringify(data.user));
+        if(!inApp){inApp=true;enterApp();}
+        else{
+          // Live refresh after reconnect
+          if(document.getElementById('profile')?.classList.contains('active'))renderProfile();
+          if(document.getElementById('race')?.classList.contains('active'))
+            document.getElementById('race-username').textContent=data.user.username.toUpperCase();
+        }
+      }
+      if(data.type==='session_invalid'){
+        currentUserData=null;inApp=false;
+        localStorage.removeItem('rt_session');localStorage.removeItem('rt_session_data');
+        doLogout();
+      }
+      if(data.type==='auth_error'){
+        document.getElementById('auth-error').textContent=data.message;
+      }
+
+      // ── Runs ─────────────────────────────────────────────────────────────
+      if(data.type==='runs'){
+        serverRuns=data.runs;
+        if(document.getElementById('leaderboard')?.classList.contains('active'))renderLeaderboard();
+        if(document.getElementById('profile')?.classList.contains('active'))renderProfile();
+      }
+      if(data.type==='run_added'){
+        if(!serverRuns.find(r=>r.id===data.run.id))serverRuns.push(data.run);
+        if(document.getElementById('leaderboard')?.classList.contains('active'))renderLeaderboard();
+        if(document.getElementById('profile')?.classList.contains('active'))renderProfile();
+      }
+      if(data.type==='run_deleted'){
+        serverRuns=serverRuns.filter(r=>r.id!==data.runId);
+        if(document.getElementById('leaderboard')?.classList.contains('active'))renderLeaderboard();
+        if(document.getElementById('profile')?.classList.contains('active'))renderProfile();
+      }
+
+      // ── Users ─────────────────────────────────────────────────────────────
+      if(data.type==='users'){
+        serverUsers=data.users;
+        if(document.getElementById('members')?.classList.contains('active'))_renderMembersFromData();
+      }
+      if(data.type==='user_deleted'){
+        serverUsers=serverUsers.filter(u=>u.id!==data.userId);
+        serverRuns=serverRuns.filter(r=>r.userId!==data.userId);
+        if(document.getElementById('members')?.classList.contains('active'))_renderMembersFromData();
+      }
+      if(data.type==='user_updated'){
+        currentUserData=data.user;
+        localStorage.setItem('rt_session_data',JSON.stringify(data.user));
+        if(document.getElementById('profile')?.classList.contains('active'))renderProfile();
+        if(document.getElementById('vehicle')?.classList.contains('active'))renderSavedChips();
+      }
+
+      // ── Forgot / reset ────────────────────────────────────────────────────
+      if(data.type==='forgot_sent')showForgotStep2(data.emailSent);
+      if(data.type==='reset_ok')showForgotSuccess();
+      if(data.type==='reset_error')document.getElementById('auth-error').textContent=data.message;
+
+      // ── Chat ─────────────────────────────────────────────────────────────
+      if(data.type==='history'){
+        document.getElementById('chat-messages').innerHTML='';
+        data.messages.forEach(renderChatMsg);scrollChat();
+      }else if(data.type==='message'){
+        renderChatMsg(data.message);scrollChat();
+      }else if(data.type==='msg_deleted'){
+        const el=document.querySelector(`[data-msg-id="${data.id}"]`);
+        if(el)el.remove();
+      }else if(data.type==='online'){
+        document.getElementById('online-count').textContent=data.count+' online';
+      }
+    }catch(err){console.error('WS msg error',err);}
+  };
+
+  appWs.onclose=()=>{
+    wsReady=false;
+    clearInterval(pingInterval);
+    document.getElementById('chat-send-btn').disabled=true;
+    document.getElementById('chat-photo-btn').disabled=true;
+    if(disc){disc.style.display='';disc.textContent='Disconnected. Reconnecting…';}
+    setTimeout(initWS,3000);
+  };
+
+  appWs.onerror=()=>appWs.close();
+}
 
 // -----------------------------------------------
 // AUTH
@@ -657,38 +796,94 @@ function authTab(tab){
   document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',i===(tab==='login'?0:1)));
   document.getElementById('login-form').style.display=tab==='login'?'':'none';
   document.getElementById('register-form').style.display=tab==='register'?'':'none';
+  document.getElementById('forgot-form').style.display='none';
+  document.getElementById('forgot-step2').style.display='none';
   document.getElementById('auth-error').textContent='';
 }
 
 function doLogin(){
   const u=document.getElementById('login-user').value.trim();
   const p=document.getElementById('login-pass').value;
-  const users=getUsers();
-  const found=users.find(x=>x.username.toLowerCase()===u.toLowerCase()&&x.password===p);
-  if(!found){document.getElementById('auth-error').textContent='Invalid username or password';return;}
-  setSession(found.id);
-  enterApp();
+  const err=document.getElementById('auth-error');
+  if(!u||!p){err.textContent='Enter username and password';return;}
+  if(!wsReady){err.textContent='Connecting to server, please wait…';return;}
+  err.textContent='';
+  appWs.send(JSON.stringify({type:'login',username:u,password:p}));
 }
 
 function doRegister(){
   const u=document.getElementById('reg-user').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
   const p=document.getElementById('reg-pass').value;
   const p2=document.getElementById('reg-pass2').value;
   const err=document.getElementById('auth-error');
   if(!u||u.length<3){err.textContent='Username must be at least 3 characters';return;}
+  if(!email||!email.includes('@')){err.textContent='Valid email required for account recovery';return;}
   if(!p||p.length<4){err.textContent='Password must be at least 4 characters';return;}
   if(p!==p2){err.textContent='Passwords do not match';return;}
-  const users=getUsers();
-  if(users.find(x=>x.username.toLowerCase()===u.toLowerCase())){err.textContent='Username already taken';return;}
-  const id='u_'+Date.now();
-  users.push({id,username:u,password:p,isAdmin:false,savedVehicles:[]});
-  saveUsers(users);
-  setSession(id);
-  enterApp();
+  if(!wsReady){err.textContent='Connecting to server, please wait…';return;}
+  err.textContent='';
+  appWs.send(JSON.stringify({type:'register',username:u,password:p,email}));
+}
+
+// -----------------------------------------------
+// FORGOT PASSWORD
+// -----------------------------------------------
+
+function showForgotStep(step){
+  document.getElementById('login-form').style.display=step===0?'':'none';
+  document.getElementById('register-form').style.display='none';
+  document.getElementById('forgot-form').style.display=step===1?'':'none';
+  document.getElementById('forgot-step2').style.display=step===2?'':'none';
+  document.getElementById('auth-error').textContent='';
+  if(step===0){
+    document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  }
+}
+
+function submitForgot(){
+  const email=document.getElementById('forgot-email').value.trim();
+  const err=document.getElementById('auth-error');
+  if(!email||!email.includes('@')){err.textContent='Enter a valid email';return;}
+  if(!wsReady){err.textContent='Not connected';return;}
+  err.textContent='Sending…';
+  appWs.send(JSON.stringify({type:'forgot_password',email}));
+}
+
+function showForgotStep2(emailSent){
+  document.getElementById('forgot-form').style.display='none';
+  document.getElementById('forgot-step2').style.display='';
+  document.getElementById('auth-error').textContent='';
+  const email=document.getElementById('forgot-email').value.trim();
+  document.getElementById('forgot-sent-msg').textContent=emailSent
+    ?`A 6-digit code was sent to ${email}. Check your inbox (and spam).`
+    :'Code generated (email not configured — contact admin for the code from the server logs).';
+}
+
+function submitReset(){
+  const email=document.getElementById('forgot-email').value.trim();
+  const token=document.getElementById('forgot-code').value.trim();
+  const newPass=document.getElementById('forgot-newpass').value;
+  const err=document.getElementById('auth-error');
+  if(!token||token.length!==6){err.textContent='Enter the 6-digit code';return;}
+  if(!newPass||newPass.length<4){err.textContent='Password must be at least 4 characters';return;}
+  if(!wsReady){err.textContent='Not connected';return;}
+  err.textContent='';
+  appWs.send(JSON.stringify({type:'reset_password',email,token,newPassword:newPass}));
+}
+
+function showForgotSuccess(){
+  document.getElementById('forgot-step2').style.display='none';
+  document.getElementById('login-form').style.display='';
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  document.getElementById('auth-error').textContent='';
+  showToast('Password reset! Log in with your new password.');
 }
 
 function doLogout(){
-  clearSession();
+  currentUserData=null;inApp=false;
+  localStorage.removeItem('rt_session');
+  localStorage.removeItem('rt_session_data');
   showToast('Logged out');
   resetRace();
   document.getElementById('auth-error').textContent='';
@@ -699,13 +894,15 @@ function doLogout(){
 }
 
 function enterApp(){
+  inApp=true;
   document.getElementById('main-nav').style.display='flex';
   document.getElementById('version-badge').textContent=APP_VERSION;
   loadCurrentVehicle();
   showSection('race');
   initGPS();
   checkMotionBtn();
-  initChat();
+  // Request fresh runs from server (WS may not be open yet on optimistic boot)
+  if(appWs&&appWs.readyState===1)appWs.send(JSON.stringify({type:'get_runs'}));
 }
 
 // -----------------------------------------------
@@ -756,12 +953,12 @@ let currentVehicle=null; // {make,model,year,variant}
 let vehiclePickerMode='pre'; // 'pre' = before run, 'post' = after run save
 
 function loadCurrentVehicle(){
-  const id=getSession();
+  const id=localStorage.getItem('rt_session');
   if(!id)return;
   try{const s=localStorage.getItem('rt_cv_'+id);if(s)currentVehicle=JSON.parse(s);}catch{}
 }
 function persistCurrentVehicle(){
-  const id=getSession();
+  const id=localStorage.getItem('rt_session');
   if(!id)return;
   if(currentVehicle)localStorage.setItem('rt_cv_'+id,JSON.stringify(currentVehicle));
   else localStorage.removeItem('rt_cv_'+id);
@@ -1158,13 +1355,17 @@ function applyChip(i){
 }
 
 function removeChip(i){
-  const users=getUsers();
-  const u=users.find(x=>x.id===currentUser().id);
+  const u=currentUser();
   if(!u)return;
-  const svRev=u.savedVehicles.slice(-10).reverse();
+  const svRev=(u.savedVehicles||[]).slice(-10).reverse();
   svRev.splice(i,1);
-  u.savedVehicles=svRev.reverse();
-  saveUsers(users);
+  // Rebuild full list: keep vehicles outside the -10 window, then the edited window
+  const full=u.savedVehicles||[];
+  const kept=full.length>10?full.slice(0,full.length-10):[];
+  const newVehicles=[...kept,...svRev.reverse()];
+  currentUserData={...currentUserData,savedVehicles:newVehicles};
+  localStorage.setItem('rt_session_data',JSON.stringify(currentUserData));
+  if(appWs&&appWs.readyState===1)appWs.send(JSON.stringify({type:'update_vehicles',vehicles:newVehicles}));
   renderSavedChips();
 }
 
@@ -1215,19 +1416,7 @@ function saveVehicleToFavourites(){
   currentVehicle=v;
   persistCurrentVehicle();
   updateVehicleBar();
-  const u=currentUser();
-  if(u){
-    const users=getUsers();
-    const usr=users.find(x=>x.id===u.id);
-    if(usr){
-      if(!usr.savedVehicles)usr.savedVehicles=[];
-      const existing=usr.savedVehicles.findIndex(sv=>sv.make===make&&sv.model===model&&sv.year===year&&sv.variant===variant);
-      if(existing>=0)usr.savedVehicles.splice(existing,1);
-      usr.savedVehicles.push(v);
-      if(usr.savedVehicles.length>20)usr.savedVehicles=usr.savedVehicles.slice(-20);
-      saveUsers(users);
-    }
-  }
+  if(appWs&&appWs.readyState===1)appWs.send(JSON.stringify({type:'save_vehicle',vehicle:v}));
   showSection('race');
   showToast('Vehicle saved!');
 }
@@ -1288,32 +1477,17 @@ function saveRunWithVehicle(v){
   const res=window._pendingResult;
   if(!res)return;
   const {make,model,year,variant}=v;
-
-  const runs=getRuns();
-  runs.push({
-    id:'r_'+Date.now(),
-    userId:u.id,username:u.username,
-    date:new Date().toISOString(),
-    mode:res.mode,
-    time:fmtTime(res.timeMs),timeMs:res.timeMs,
-    distance:res.distance,topSpeed:res.topSpeed,
-    vehicleMake:make,vehicleModel:model,vehicleYear:year,vehicleVariant:variant,
-    split100:res.split100||0
-  });
-  saveRuns(runs);
-
-  // Remember vehicle on user profile
-  const users=getUsers();
-  const usr=users.find(x=>x.id===u.id);
-  if(usr){
-    if(!usr.savedVehicles)usr.savedVehicles=[];
-    const existing=usr.savedVehicles.findIndex(sv=>sv.make===make&&sv.model===model&&sv.year===year&&sv.variant===variant);
-    if(existing>=0)usr.savedVehicles.splice(existing,1);
-    usr.savedVehicles.push({make,model,year,variant});
-    if(usr.savedVehicles.length>20)usr.savedVehicles=usr.savedVehicles.slice(-20);
-    saveUsers(users);
+  if(appWs&&appWs.readyState===1){
+    appWs.send(JSON.stringify({type:'save_run',run:{
+      date:new Date().toISOString(),
+      mode:res.mode,
+      time:fmtTime(res.timeMs),timeMs:res.timeMs,
+      distance:res.distance,topSpeed:res.topSpeed,
+      vehicleMake:make,vehicleModel:model,vehicleYear:year,vehicleVariant:variant,
+      split100:res.split100||0
+    }}));
+    appWs.send(JSON.stringify({type:'save_vehicle',vehicle:{make,model,year,variant}}));
   }
-
   window._pendingResult=null;
   showToast('Run saved!');
   resetRace();
@@ -1341,7 +1515,7 @@ function lbRowClick(id){
 
 function renderLeaderboard(){
   const u=currentUser();
-  let runs=getRuns();
+  let runs=serverRuns;
   if(lbCurrentTab==='mine')runs=runs.filter(r=>r.userId===u?.id);
 
   const modes=['0100','400m','custom_dist','custom_speed'];
@@ -1371,8 +1545,8 @@ function renderLeaderboard(){
         <div class="lb-rank">${rank}</div>
         ${logoHtml}
         <div class="lb-info">
-          <div class="lb-driver">${r.username}${isMe?' <span style="color:var(--green);font-size:10px">(you)</span>':''}</div>
-          <div class="lb-vehicle">${vehicle}</div>
+          <div class="lb-driver">${escHtml(r.username)}${isMe?' <span style="color:var(--green);font-size:10px">(you)</span>':''}</div>
+          <div class="lb-vehicle">${escHtml(vehicle)}</div>
         </div>
         <div class="lb-time">${r.time}</div>
         <div style="color:var(--text-dim);font-size:12px;flex-shrink:0;margin-left:2px">▾</div>
@@ -1394,37 +1568,41 @@ function renderLeaderboard(){
   content.innerHTML=html;
 
   const adminBar=document.getElementById('lb-admin-bar');
-  if(u?.isAdmin&&getRuns().length>0)adminBar.style.display='';
-  else adminBar.style.display='none';
+  adminBar.style.display=(u?.isAdmin&&serverRuns.length>0)?'':'none';
 }
 
 function clearLeaderboard(){
   if(!currentUser()?.isAdmin)return;
   if(!confirm('Clear ALL runs from all users?'))return;
-  saveRuns([]);
+  if(appWs&&appWs.readyState===1)appWs.send(JSON.stringify({type:'clear_runs'}));
   showToast('Leaderboard cleared');
-  renderLeaderboard();
 }
 
 function renderMembers(){
   if(!currentUser()?.isAdmin)return;
-  const users=getUsers();
-  const runs=getRuns();
-  document.getElementById('members-count').textContent=users.length+' member'+(users.length!==1?'s':'');
+  if(appWs&&appWs.readyState===1)appWs.send(JSON.stringify({type:'get_users'}));
+  _renderMembersFromData();
+}
+
+function _renderMembersFromData(){
+  const u=currentUser();
+  if(!u?.isAdmin)return;
+  const members=serverUsers;
+  document.getElementById('members-count').textContent=members.length+' member'+(members.length!==1?'s':'');
   const list=document.getElementById('members-list');
   list.innerHTML='';
-  users.forEach(u=>{
-    const runCount=runs.filter(r=>r.userId===u.id).length;
-    const init=u.username.substring(0,1).toUpperCase();
+  members.forEach(m=>{
+    const runCount=serverRuns.filter(r=>r.userId===m.id).length;
+    const init=m.username.substring(0,1).toUpperCase();
     const div=document.createElement('div');
     div.className='member-item';
     div.innerHTML=`
       <div class="member-avatar">${escHtml(init)}</div>
       <div class="member-info">
-        <div class="member-name">${escHtml(u.username)}${u.isAdmin?'&nbsp;<span style="color:var(--red);font-size:10px;letter-spacing:.5px">ADMIN</span>':''}</div>
-        <div class="member-sub">${runCount} run${runCount!==1?'s':''}</div>
+        <div class="member-name">${escHtml(m.username)}${m.isAdmin?'&nbsp;<span style="color:var(--red);font-size:10px;letter-spacing:.5px">ADMIN</span>':''}</div>
+        <div class="member-sub">${m.email?escHtml(m.email)+' · ':''}${runCount} run${runCount!==1?'s':''}</div>
       </div>
-      ${u.isAdmin?'':`<button class="member-delete" onclick="deleteAccount('${u.id}')">DELETE</button>`}
+      ${m.isAdmin?'':`<button class="member-delete" onclick="deleteAccount('${m.id}')">DELETE</button>`}
     `;
     list.appendChild(div);
   });
@@ -1432,26 +1610,22 @@ function renderMembers(){
 
 function deleteAccount(userId){
   if(!currentUser()?.isAdmin)return;
-  const users=getUsers();
-  const target=users.find(u=>u.id===userId);
+  const target=serverUsers.find(u=>u.id===userId);
   if(!target)return;
-  if(!confirm(`Delete account "${target.username}"?\n\nThis will also remove all their saved runs and cannot be undone.`))return;
-  saveUsers(users.filter(u=>u.id!==userId));
-  saveRuns(getRuns().filter(r=>r.userId!==userId));
+  if(!confirm(`Delete account "${target.username}"?\n\nThis will also remove all their runs and cannot be undone.`))return;
+  if(appWs&&appWs.readyState===1)appWs.send(JSON.stringify({type:'delete_user',userId}));
   showToast('Account deleted');
-  renderMembers();
 }
 
 function deleteRun(runId){
   const u=currentUser();
   if(!u)return;
-  const runs=getRuns();
-  const run=runs.find(r=>r.id===runId);
+  const run=serverRuns.find(r=>r.id===runId);
   if(!run)return;
   if(!u.isAdmin&&run.userId!==u.id)return;
-  saveRuns(runs.filter(r=>r.id!==runId));
+  if(!confirm('Delete this run?'))return;
+  if(appWs&&appWs.readyState===1)appWs.send(JSON.stringify({type:'delete_run',runId}));
   showToast('Run deleted');
-  renderLeaderboard();
 }
 
 // -----------------------------------------------
@@ -1461,13 +1635,12 @@ function deleteRun(runId){
 function renderProfile(){
   const u=currentUser();
   if(!u)return;
-  const init=u.username.substring(0,1).toUpperCase();
-  document.getElementById('profile-avatar').textContent=init;
+  document.getElementById('profile-avatar').textContent=u.username.substring(0,1).toUpperCase();
   document.getElementById('profile-name').textContent=u.username.toUpperCase();
   document.getElementById('profile-admin-badge').style.display=u.isAdmin?'':'none';
   document.getElementById('admin-members-btn').style.display=u.isAdmin?'':'none';
 
-  const runs=getRuns().filter(r=>r.userId===u.id);
+  const runs=serverRuns.filter(r=>r.userId===u.id);
   const topSpeed=runs.reduce((m,r)=>Math.max(m,r.topSpeed||0),0);
   document.getElementById('profile-stats').innerHTML=`
     <div class="pstat"><div class="pstat-val">${runs.length}</div><div class="pstat-key">Runs</div></div>
@@ -1487,7 +1660,7 @@ function renderProfile(){
       :`<div style="font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;color:#000;background:linear-gradient(135deg,var(--green),var(--green2));width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center">${v.make.substring(0,2).toUpperCase()}</div>`;
     html+=`<div class="saved-vehicle-item card-3d">
       <div class="svi-logo">${logoHtml}</div>
-      <div class="svi-info"><div class="svi-make">${v.make}</div><div class="svi-detail">${label||'—'}</div></div>
+      <div class="svi-info"><div class="svi-make">${escHtml(v.make)}</div><div class="svi-detail">${escHtml(label)||'—'}</div></div>
       <button class="svi-remove" onclick="removeProfileVehicle(${i})">×</button>
     </div>`;
   });
@@ -1495,15 +1668,15 @@ function renderProfile(){
 }
 
 function removeProfileVehicle(i){
-  const users=getUsers();
-  const u=users.find(x=>x.id===currentUser().id);
+  const u=currentUser();
   if(!u)return;
-  [...u.savedVehicles].reverse().splice(i,1);
-  // rebuild correctly
-  const rev=[...u.savedVehicles].reverse();
+  const rev=[...(u.savedVehicles||[])].reverse();
   rev.splice(i,1);
-  u.savedVehicles=rev.reverse();
-  saveUsers(users);
+  const newVehicles=rev.reverse();
+  // Optimistic local update
+  currentUserData={...currentUserData,savedVehicles:newVehicles};
+  localStorage.setItem('rt_session_data',JSON.stringify(currentUserData));
+  if(appWs&&appWs.readyState===1)appWs.send(JSON.stringify({type:'update_vehicles',vehicles:newVehicles}));
   renderProfile();
 }
 
@@ -1523,61 +1696,6 @@ function showToast(msg,type=''){
 // -----------------------------------------------
 // CHAT
 // -----------------------------------------------
-
-let chatWs=null,chatReady=false;
-
-function initChat(){
-  if(chatWs&&chatWs.readyState<2)return;
-  const proto=location.protocol==='https:'?'wss':'ws';
-  const url=proto+'://'+location.host+'/ws';
-  chatWs=new WebSocket(url);
-  let pingInterval=null;
-  const disc=document.getElementById('chat-disconnected');
-  disc.style.display='';
-  disc.textContent='Connecting to chat…';
-
-  chatWs.onopen=()=>{
-    chatReady=true;
-    disc.style.display='none';
-    document.getElementById('chat-send-btn').disabled=false;
-    document.getElementById('chat-photo-btn').disabled=false;
-    // Keep Railway proxy alive with application-level pings every 20 s
-    pingInterval=setInterval(()=>{
-      if(chatWs.readyState===1)chatWs.send(JSON.stringify({type:'ping'}));
-    },20000);
-  };
-
-  chatWs.onmessage=e=>{
-    try{
-      const data=JSON.parse(e.data);
-      if(data.type==='history'){
-        document.getElementById('chat-messages').innerHTML='';
-        data.messages.forEach(renderChatMsg);
-        scrollChat();
-      } else if(data.type==='message'){
-        renderChatMsg(data.message);
-        scrollChat();
-      } else if(data.type==='msg_deleted'){
-        const el=document.querySelector(`[data-msg-id="${data.id}"]`);
-        if(el)el.remove();
-      } else if(data.type==='online'){
-        document.getElementById('online-count').textContent=data.count+' online';
-      }
-    }catch{}
-  };
-
-  chatWs.onclose=()=>{
-    chatReady=false;
-    clearInterval(pingInterval);
-    document.getElementById('chat-send-btn').disabled=true;
-    document.getElementById('chat-photo-btn').disabled=true;
-    disc.style.display='';
-    disc.textContent='Disconnected. Reconnecting…';
-    setTimeout(initChat,3000);
-  };
-
-  chatWs.onerror=()=>chatWs.close();
-}
 
 function renderChatMsg(msg){
   const u=currentUser();
@@ -1601,13 +1719,13 @@ function deleteMsg(id){
   if(!u)return;
   const el=document.querySelector(`[data-msg-id="${id}"]`);
   if(!u.isAdmin&&(!el||el.dataset.msgUsername!==u.username))return;
-  if(chatWs&&chatWs.readyState===1)chatWs.send(JSON.stringify({type:'delete_msg',id}));
+  if(appWs&&appWs.readyState===1)appWs.send(JSON.stringify({type:'delete_msg',id}));
 }
 
 function handlePhotoSelect(input){
   const file=input.files[0];
   input.value='';
-  if(!file||!chatReady)return;
+  if(!file||!wsReady)return;
   const u=currentUser();
   if(!u)return;
   const reader=new FileReader();
@@ -1621,7 +1739,7 @@ function handlePhotoSelect(input){
       canvas.width=w;canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
       const dataUrl=canvas.toDataURL('image/jpeg',0.65);
-      chatWs.send(JSON.stringify({type:'chat',username:u.username,text:'',image:dataUrl}));
+      appWs.send(JSON.stringify({type:'chat',username:u.username,text:'',image:dataUrl}));
     };
     img.src=e.target.result;
   };
@@ -1636,10 +1754,10 @@ function scrollChat(){
 function sendChat(){
   const inp=document.getElementById('chat-input');
   const text=inp.value.trim();
-  if(!text||!chatReady)return;
+  if(!text||!wsReady)return;
   const u=currentUser();
   if(!u)return;
-  chatWs.send(JSON.stringify({type:'chat',username:u.username,text}));
+  appWs.send(JSON.stringify({type:'chat',username:u.username,text}));
   inp.value='';
 }
 
@@ -1652,9 +1770,10 @@ function escHtml(s){
 // -----------------------------------------------
 
 (function boot(){
-  // Restore session
-  const u=currentUser();
-  if(u){enterApp();}
+  initWS(); // Connect immediately (handles auth, chat, data)
+  // Optimistic session restore — show app right away with cached user data
+  const cached=currentUser();
+  if(cached){currentUserData=cached;enterApp();}
   // PWA service worker
   if('serviceWorker'in navigator&&location.protocol==='https:'){
     const sw=`self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>new Response('',{status:503}))))`;
