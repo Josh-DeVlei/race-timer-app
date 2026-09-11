@@ -253,6 +253,7 @@ select option{background:#0a0f1e;color:#e0e0e0}
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+<div id="offline-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999;background:#b33;color:#fff;font-size:12px;letter-spacing:1px;text-align:center;padding:6px;font-family:'Orbitron',sans-serif">OFFLINE — runs will sync when reconnected</div>
 
 <div id="app">
 
@@ -924,6 +925,7 @@ function initWS(){
   appWs.onopen=()=>{
     wsReady=true;
     if(disc)disc.style.display='none';
+    setOfflineBanner(false);
     document.getElementById('chat-send-btn').disabled=false;
     document.getElementById('chat-photo-btn').disabled=false;
     pingInterval=setInterval(()=>{if(appWs.readyState===1)appWs.send(JSON.stringify({type:'ping'}));},20000);
@@ -932,6 +934,16 @@ function initWS(){
     // Try to restore auth session
     const userId=localStorage.getItem('rt_session');
     if(userId)appWs.send(JSON.stringify({type:'restore_session',userId}));
+    // Flush runs saved while offline
+    const pending=JSON.parse(localStorage.getItem('rt_pending_runs')||'[]');
+    if(pending.length){
+      pending.forEach(({run,vehicle})=>{
+        appWs.send(JSON.stringify({type:'save_run',run}));
+        if(vehicle)appWs.send(JSON.stringify({type:'save_vehicle',vehicle}));
+      });
+      localStorage.removeItem('rt_pending_runs');
+      showToast(`Synced ${pending.length} offline run${pending.length>1?'s':''}!`,'success');
+    }
   };
 
   appWs.onmessage=e=>{
@@ -1016,6 +1028,7 @@ function initWS(){
 
   appWs.onclose=()=>{
     wsReady=false;
+    setOfflineBanner(true);
     clearInterval(pingInterval);
     document.getElementById('chat-send-btn').disabled=true;
     document.getElementById('chat-photo-btn').disabled=true;
@@ -1176,7 +1189,8 @@ function showLeaderboard(){showSection('leaderboard')}
 // RACE STATE
 // -----------------------------------------------
 
-const APP_VERSION='v1.8';
+const APP_VERSION='v1.9';
+function setOfflineBanner(show){const b=document.getElementById('offline-banner');if(b)b.style.display=show?'':'none';}
 
 let raceState='idle'; // idle|armed|running|finished
 let raceMode='0100';
@@ -1772,19 +1786,26 @@ function saveRunWithVehicle(v){
   const res=window._pendingResult;
   if(!res)return;
   const {make,model,year,variant,mods}=v;
+  const run={
+    date:new Date().toISOString(),
+    mode:res.mode,
+    time:fmtTime(res.timeMs),timeMs:res.timeMs,
+    distance:res.distance,topSpeed:res.topSpeed,
+    vehicleMake:make,vehicleModel:model,vehicleYear:year,vehicleVariant:variant,vehicleMods:mods||'',
+    split100:res.split100||0
+  };
+  const vehicle={make,model,year,variant,mods:mods||''};
   if(appWs&&appWs.readyState===1){
-    appWs.send(JSON.stringify({type:'save_run',run:{
-      date:new Date().toISOString(),
-      mode:res.mode,
-      time:fmtTime(res.timeMs),timeMs:res.timeMs,
-      distance:res.distance,topSpeed:res.topSpeed,
-      vehicleMake:make,vehicleModel:model,vehicleYear:year,vehicleVariant:variant,vehicleMods:mods||'',
-      split100:res.split100||0
-    }}));
-    appWs.send(JSON.stringify({type:'save_vehicle',vehicle:{make,model,year,variant,mods:mods||''}}));
+    appWs.send(JSON.stringify({type:'save_run',run}));
+    appWs.send(JSON.stringify({type:'save_vehicle',vehicle}));
+    showToast('Run saved!');
+  } else {
+    const pending=JSON.parse(localStorage.getItem('rt_pending_runs')||'[]');
+    pending.push({run,vehicle});
+    localStorage.setItem('rt_pending_runs',JSON.stringify(pending));
+    showToast('Saved offline — will sync when back online');
   }
   window._pendingResult=null;
-  showToast('Run saved!');
   resetRace();
   showSection('race');
 }
@@ -2070,12 +2091,13 @@ function escHtml(s){
   // Optimistic session restore — show app right away with cached user data
   const cached=currentUser();
   if(cached){currentUserData=cached;enterApp();}
-  // PWA service worker
+  // PWA service worker — cache shell for offline use
   if('serviceWorker'in navigator&&location.protocol==='https:'){
-    const sw=`self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>new Response('',{status:503}))))`;
-    const blob=new Blob([sw],{type:'text/javascript'});
-    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
   }
+  // Offline/online events
+  window.addEventListener('online',()=>{setOfflineBanner(false);initWS();});
+  window.addEventListener('offline',()=>setOfflineBanner(true));
 })();
 </script>
 </body>
