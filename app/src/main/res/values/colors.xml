@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="timer_idle">#FFFFFF</color>
+    <color name="timer_running">#00FF41</color>
+    <color name="timer_finished">#FFD700</color>
+    <color name="black">#000000</color>
+</resources>

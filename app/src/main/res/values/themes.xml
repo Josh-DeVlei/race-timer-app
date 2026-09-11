@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.RaceTimer" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">#000000</item>
+        <item name="android:statusBarColor">#000000</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="colorPrimary">#00FF41</item>
+        <item name="colorAccent">#00FF41</item>
+    </style>
+
+    <style name="DarkDialog" parent="Theme.AppCompat.Dialog.Alert">
+        <item name="android:background">#1C1C1C</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="colorAccent">#00FF41</item>
+    </style>
+</resources>
