@@ -43,30 +43,42 @@ if (!users.find(u => u.username === 'admin')) {
   saveJSON('users.json', users);
 }
 
-// ── Email ─────────────────────────────────────────────────────────────────────
-console.log('SMTP_HOST:', process.env.SMTP_HOST || '(not set)');
-console.log('SMTP_USER:', process.env.SMTP_USER || '(not set)');
-console.log('SMTP_PASS:', process.env.SMTP_PASS ? '(set, length ' + process.env.SMTP_PASS.length + ')' : '(not set)');
-let mailer = null;
-if (process.env.SMTP_HOST) {
-  try {
-    const nodemailer = require('nodemailer');
-    const port = parseInt(process.env.SMTP_PORT || '465');
-    mailer = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port,
-      secure: port === 465,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-      tls: { rejectUnauthorized: false }
-    });
-    console.log('Email configured via', process.env.SMTP_HOST);
-  } catch (e) { console.warn('nodemailer not available:', e.message); }
-}
+// ── Email (Resend HTTP API — works on Railway) ────────────────────────────────
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+console.log('RESEND_API_KEY:', RESEND_API_KEY ? '(set, length ' + RESEND_API_KEY.length + ')' : '(not set)');
 
 async function sendMail(to, subject, text) {
-  if (!mailer) return false;
+  if (!RESEND_API_KEY) return false;
   try {
-    await mailer.sendMail({ from: process.env.SMTP_FROM || process.env.SMTP_USER, to, subject, text });
+    const https = require('https');
+    const body = JSON.stringify({
+      from: 'Race Timer <onboarding@resend.dev>',
+      to: [to],
+      subject,
+      text
+    });
+    await new Promise((resolve, reject) => {
+      const req = https.request({
+        hostname: 'api.resend.com',
+        path: '/emails',
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + RESEND_API_KEY,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(body)
+        }
+      }, (res) => {
+        let data = '';
+        res.on('data', d => data += d);
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve(data);
+          else reject(new Error('Resend API error ' + res.statusCode + ': ' + data));
+        });
+      });
+      req.on('error', reject);
+      req.write(body);
+      req.end();
+    });
     return true;
   } catch (e) { console.error('Mail error:', e.message); return false; }
 }
