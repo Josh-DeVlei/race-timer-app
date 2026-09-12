@@ -51,12 +51,11 @@ let mailer = null;
 if (process.env.SMTP_HOST) {
   try {
     const nodemailer = require('nodemailer');
-    const port = parseInt(process.env.SMTP_PORT || '587');
+    const port = parseInt(process.env.SMTP_PORT || '465');
     mailer = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port,
       secure: port === 465,
-      requireTLS: port === 587,
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
       tls: { rejectUnauthorized: false }
     });
