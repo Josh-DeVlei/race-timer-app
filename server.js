@@ -48,11 +48,14 @@ let mailer = null;
 if (process.env.SMTP_HOST) {
   try {
     const nodemailer = require('nodemailer');
+    const port = parseInt(process.env.SMTP_PORT || '587');
     mailer = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+      port,
+      secure: port === 465,
+      requireTLS: port === 587,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      tls: { rejectUnauthorized: false }
     });
     console.log('Email configured via', process.env.SMTP_HOST);
   } catch (e) { console.warn('nodemailer not available:', e.message); }
