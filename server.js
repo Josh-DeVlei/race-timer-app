@@ -44,6 +44,9 @@ if (!users.find(u => u.username === 'admin')) {
 }
 
 // ── Email ─────────────────────────────────────────────────────────────────────
+console.log('SMTP_HOST:', process.env.SMTP_HOST || '(not set)');
+console.log('SMTP_USER:', process.env.SMTP_USER || '(not set)');
+console.log('SMTP_PASS:', process.env.SMTP_PASS ? '(set, length ' + process.env.SMTP_PASS.length + ')' : '(not set)');
 let mailer = null;
 if (process.env.SMTP_HOST) {
   try {
