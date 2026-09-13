@@ -1,4 +1,4 @@
-const CACHE = 'race-timer-v1.9';
+const CACHE = 'race-timer-v2.0';
 const SHELL = ['/'];
 
 self.addEventListener('install', e => {
