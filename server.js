@@ -11,6 +11,21 @@ const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 5 * 1024 * 10
 
 app.use(express.static(path.join(__dirname)));
 
+// ── Digital Asset Links (TWA / Play Store) ────────────────────────────────────
+// Fill in sha256_cert_fingerprints after generating your TWA signing key in PWABuilder
+app.get('/.well-known/assetlinks.json', (req, res) => {
+  res.json([{
+    relation: ['delegate_permission/common.handle_all_urls'],
+    target: {
+      namespace: 'android_app',
+      package_name: 'com.racetimer.app',
+      sha256_cert_fingerprints: [
+        process.env.TWA_FINGERPRINT || 'REPLACE_AFTER_PWABUILDER'
+      ]
+    }
+  }]);
+});
+
 // ── Persistence ───────────────────────────────────────────────────────────────
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });

@@ -1,0 +1,17 @@
+{
+  "name": "Race Timer",
+  "short_name": "Race Timer",
+  "description": "Track your vehicle's acceleration times — 0-100, quarter mile, and custom runs.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000814",
+  "theme_color": "#00ff41",
+  "icons": [
+    { "src": "/icons/icon-96.png",  "sizes": "96x96",   "type": "image/png" },
+    { "src": "/icons/icon-144.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["sports", "utilities"]
+}
