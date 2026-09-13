@@ -245,9 +245,34 @@ select option{background:#0a0f1e;color:#e0e0e0}
 .result-card{padding:24px;border-radius:16px;background:linear-gradient(135deg,rgba(0,255,65,.08),rgba(0,204,51,.04));border:1px solid rgba(0,255,65,.3);text-align:center;margin-bottom:16px}
 .result-time{font-family:'Orbitron',sans-serif;font-size:clamp(36px,12vw,64px);font-weight:900;color:var(--green);text-shadow:0 0 40px rgba(0,255,65,.6)}
 .result-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
+/* ── Warning Modal ── */
+#warning-modal{position:fixed;inset:0;z-index:9999;background:rgba(0,8,20,0.97);display:flex;align-items:center;justify-content:center;padding:20px}
+#warning-modal .warn-box{max-width:420px;width:100%;border:2px solid var(--red);border-radius:20px;background:linear-gradient(135deg,rgba(255,64,64,.08),rgba(0,8,20,0.95));padding:32px 28px;text-align:center}
+#warning-modal .warn-icon{font-size:56px;line-height:1;margin-bottom:16px;filter:drop-shadow(0 0 20px rgba(255,64,64,.8))}
+#warning-modal h2{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:900;letter-spacing:4px;color:var(--red);text-shadow:0 0 20px rgba(255,64,64,.6);margin-bottom:20px}
+#warning-modal ul{list-style:none;margin-bottom:24px;text-align:left}
+#warning-modal ul li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(255,64,64,.15);font-size:14px;line-height:1.5;color:var(--text)}
+#warning-modal ul li:last-child{border-bottom:none}
+#warning-modal ul li span.dot{color:var(--red);font-size:18px;line-height:1.4;flex-shrink:0}
+#warning-modal .warn-risk{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:22px}
+#warning-modal button{width:100%;padding:16px;font-family:'Orbitron',sans-serif;font-size:12px;font-weight:900;letter-spacing:2px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--red),#cc2020);color:#fff;cursor:pointer;text-transform:uppercase;box-shadow:0 0 24px rgba(255,64,64,.4)}
+#warning-modal button:active{transform:scale(.97)}
 </style>
 </head>
 <body>
+<div id="warning-modal">
+  <div class="warn-box">
+    <div class="warn-icon">⚠️</div>
+    <h2>WARNING</h2>
+    <ul>
+      <li><span class="dot">▸</span><span>Racing or high-speed driving on <strong>public roads is illegal</strong> and may result in criminal prosecution.</span></li>
+      <li><span class="dot">▸</span><span><strong>High speeds are extremely dangerous</strong> and can cause serious injury or death to you and others.</span></li>
+      <li><span class="dot">▸</span><span>This app is provided for <strong>off-road and track use only</strong>. Use it responsibly and only in legal, controlled environments.</span></li>
+    </ul>
+    <p class="warn-risk">You use this app entirely at your own risk</p>
+    <button onclick="acknowledgeWarning()">I Understand — Use at Own Risk</button>
+  </div>
+</div>
 <div class="orb orb1"></div>
 <div class="orb orb2"></div>
 
@@ -2083,10 +2108,24 @@ function escHtml(s){
 }
 
 // -----------------------------------------------
+// WARNING MODAL
+// -----------------------------------------------
+
+function acknowledgeWarning(){
+  try{localStorage.setItem('rt_warning_ack','1');}catch{}
+  document.getElementById('warning-modal').style.display='none';
+}
+
+// -----------------------------------------------
 // BOOT
 // -----------------------------------------------
 
 (function boot(){
+  if(!localStorage.getItem('rt_warning_ack')){
+    document.getElementById('warning-modal').style.display='flex';
+  }else{
+    document.getElementById('warning-modal').style.display='none';
+  }
   initWS(); // Connect immediately (handles auth, chat, data)
   // Optimistic session restore — show app right away with cached user data
   const cached=currentUser();
