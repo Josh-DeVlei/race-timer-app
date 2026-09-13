@@ -2113,7 +2113,6 @@ function escHtml(s){
 // -----------------------------------------------
 
 function acknowledgeWarning(){
-  try{localStorage.setItem('rt_warning_ack','1');}catch{}
   document.getElementById('warning-modal').style.display='none';
 }
 
@@ -2122,11 +2121,7 @@ function acknowledgeWarning(){
 // -----------------------------------------------
 
 (function boot(){
-  if(!localStorage.getItem('rt_warning_ack')){
-    document.getElementById('warning-modal').style.display='flex';
-  }else{
-    document.getElementById('warning-modal').style.display='none';
-  }
+  document.getElementById('warning-modal').style.display='flex';
   initWS(); // Connect immediately (handles auth, chat, data)
   // Optimistic session restore — show app right away with cached user data
   const cached=currentUser();
